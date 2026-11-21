@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '../db';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
-import { sellableStock } from '../stock';
+import { prisma } from '../db.js';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
+import { sellableStock } from '../stock.js';
 
 export const r = Router();
 
@@ -62,7 +62,7 @@ r.post('/medicines', auth(...GROUPS.stock), wrap(async (req: any, res: any) => {
     if (dup) throw new HttpError(409, `Shayad yeh dawai pehle se hai: "${dup.name}". Phir bhi banani hai to "force" tick karein.`);
   }
   const { force, sku, ...data } = b;
-  const m = await prisma.medicine.create({ data: { ...data, sku: sku || 'MED-' + Date.now().toString(36).toUpperCase() } });
+  const m = await prisma.medicine.create({ data: { ...data, sku: sku || 'MED-' + Date.now().toString(36).toUpperCase() } as any });
   await audit(req, 'CREATE', 'Medicine', m.id, { name: m.name });
   res.json(m);
 }));

@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
-import { prisma } from './db';
-import { config } from './config';
+import { prisma } from './db.js';
+import { config } from './config.js';
 
 export class HttpError extends Error {
   constructor(public status: number, message: string) {

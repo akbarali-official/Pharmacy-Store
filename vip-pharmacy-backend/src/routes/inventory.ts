@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, D } from '../db';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
-import { todayDate, takeFromBatch, validBatchWhere } from '../stock';
-import { getSettings } from './settings';
+import { prisma, D } from '../db.js';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
+import { todayDate, takeFromBatch, validBatchWhere } from '../stock.js';
+import { getSettings } from './settings.js';
 
 export const r = Router();
 

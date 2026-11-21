@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '../db';
-import { auth, GROUPS, wrap, audit } from '../middleware';
+import { prisma } from '../db.js';
+import { auth, GROUPS, wrap, audit } from '../middleware.js';
 
 export const DEFAULTS: Record<string, string> = {
   storeName: 'Mashallah Medical Store',

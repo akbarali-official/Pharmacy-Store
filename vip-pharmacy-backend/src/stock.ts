@@ -1,5 +1,5 @@
-import { prisma, Tx } from './db';
-import { HttpError } from './middleware';
+import { prisma, Tx } from './db.js';
+import { HttpError } from './middleware.js';
 
 // Date-only (UTC midnight) for today. Expiry date wali batch usi din tak bik sakti hai.
 export const todayDate = () => {

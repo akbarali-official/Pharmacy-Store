@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, D } from '../db';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
+import { prisma, D } from '../db.js';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
 
 export const r = Router();
 
@@ -16,7 +16,7 @@ r.get('/suppliers', auth(...GROUPS.buy, 'ACCOUNTANT'), wrap(async (req: any, res
 }));
 r.post('/suppliers', auth(...GROUPS.buy), wrap(async (req: any, res: any) => {
   const b = supSchema.parse(req.body);
-  const s = await prisma.supplier.create({ data: { ...b, email: b.email || null } });
+  const s = await prisma.supplier.create({ data: { ...b, email: b.email || null } as any });
   await audit(req, 'CREATE', 'Supplier', s.id);
   res.json(s);
 }));
@@ -36,7 +36,7 @@ r.get('/customers', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any, re
 }));
 r.post('/customers', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = custSchema.parse(req.body);
-  res.json(await prisma.customer.create({ data: { ...b, email: b.email || null } }));
+  res.json(await prisma.customer.create({ data: { ...b, email: b.email || null } as any}));
 }));
 r.patch('/customers/:id', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = custSchema.partial().parse(req.body);

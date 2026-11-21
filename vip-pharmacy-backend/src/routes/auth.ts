@@ -3,10 +3,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { prisma } from '../db';
-import { config } from '../config';
-import { wrap, HttpError, auth, GROUPS, audit } from '../middleware';
-import { setSettings } from './settings';
+import { prisma } from '../db.js';
+import { config } from '../config.js';
+import { wrap, HttpError, auth, GROUPS, audit } from '../middleware.js';
+import { setSettings } from './settings.js';
 
 export const r = Router();
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false, message: { error: 'Bohat zyada koshishain, 15 minute baad dobara try karein' } });

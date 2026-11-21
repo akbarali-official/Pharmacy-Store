@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { Prisma } from '@prisma/client';
-import { prisma } from '../db';
-import { auth, GROUPS, wrap } from '../middleware';
-import { todayDate, validBatchWhere } from '../stock';
-import { getSettings } from './settings';
+import { prisma } from '../db.js';
+import { auth, GROUPS, wrap } from '../middleware.js';
+import { todayDate, validBatchWhere } from '../stock.js';
+import { getSettings } from './settings.js';
 
 export const r = Router();
 const num = (v: any) => Number(v ?? 0);
