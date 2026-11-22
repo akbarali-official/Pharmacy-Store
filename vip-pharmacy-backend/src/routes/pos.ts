@@ -27,7 +27,7 @@ r.post('/pos/checkout', auth(...GROUPS.sell), wrap(async (req: any, res: any) =>
     const meds = await tx.medicine.findMany({ where: { id: { in: [...merged.keys()] }, active: true } });
     if (meds.length !== merged.size) throw new HttpError(400, 'Koi dawai mojood nahi ya inactive hai');
     if (meds.some((m) => m.requiresPrescription) && !b.prescriptionVerified)
-      throw new HttpError(422, 'Prescription wali dawai hai: pehle prescription check karke tick karein');
+      throw new HttpError(422, 'This medicine requires a prescription. Please verify and approve the prescription first.');
 
     const lines: any[] = [];
     let subtotal = D(0);
@@ -41,16 +41,16 @@ r.post('/pos/checkout', auth(...GROUPS.sell), wrap(async (req: any, res: any) =>
       }
     }
     const discount = D(b.discount).toDecimalPlaces(2);
-    if (discount.gt(subtotal)) throw new HttpError(422, 'Discount bill se zyada nahi ho sakta');
+    if (discount.gt(subtotal)) throw new HttpError(422, 'Discount cannot exceed the total bill amount.');
     const total = subtotal.sub(discount).toDecimalPlaces(2);
 
     const paid = b.payments.reduce((s, p) => s.add(D(p.amount)), D(0));
-    if (paid.lt(total)) throw new HttpError(422, 'Payment poori nahi hai');
+    if (paid.lt(total)) throw new HttpError(422, 'Payment is incomplete.');
     const change = paid.sub(total);
     const pays = b.payments.map((p) => ({ method: p.method, amount: D(p.amount) }));
     if (change.gt(0)) {
       const cash = pays.find((p) => p.method === 'CASH' && p.amount.gte(change));
-      if (!cash) throw new HttpError(422, 'Zyada payment sirf cash mein wapas ho sakti hai');
+      if (!cash) throw new HttpError(422, 'Overpayments can only be refunded in cash.');
       cash.amount = cash.amount.sub(change);
     }
 
@@ -114,7 +114,7 @@ r.get('/sales', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any, res: a
 r.get('/sales/:id', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any, res: any) => {
   const sale = await loadSale(Number(req.params.id));
   if (!sale || sale.branchId !== req.user.branchId) throw new HttpError(404, 'Sale nahi mili');
-  if (req.user.role === 'CASHIER' && sale.cashierId !== req.user.id) throw new HttpError(403, 'Yeh bill aap ka nahi');
+  if (req.user.role === 'CASHIER' && sale.cashierId !== req.user.id) throw new HttpError(403, 'This bill does not belong to you.');
   res.json(sale);
 }));
 

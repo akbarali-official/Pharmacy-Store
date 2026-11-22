@@ -28,16 +28,16 @@ export const GROUPS = {
 export function auth(...allowed: string[]) {
   return wrap(async (req: any, _res: Response, next: NextFunction) => {
     const h = req.headers.authorization || '';
-    if (!h.startsWith('Bearer ')) throw new HttpError(401, 'Login zaroori hai');
+    if (!h.startsWith('Bearer ')) throw new HttpError(401, 'Login is required');
     let payload: any;
     try {
       payload = jwt.verify(h.slice(7), config.jwtSecret);
     } catch {
-      throw new HttpError(401, 'Session khatam ho gaya, dobara login karein');
+      throw new HttpError(401, 'Your session has expired. Please login again.');
     }
     const user = await prisma.user.findUnique({ where: { id: payload.uid } });
-    if (!user || !user.active) throw new HttpError(401, 'Account band hai ya mojood nahi');
-    if (allowed.length && !allowed.includes(user.role)) throw new HttpError(403, 'Aap ko is kaam ki ijazat nahi');
+    if (!user || !user.active) throw new HttpError(401, 'Account is disabled or does not exist.');
+    if (allowed.length && !allowed.includes(user.role)) throw new HttpError(403, 'You are not authorized tomperform this action.');
     req.user = user;
     next();
   });
@@ -53,12 +53,12 @@ export function errorHandler(err: any, _req: Request, res: Response, _next: Next
     return res.status(400).json({ error: 'Data theek nahi: ' + err.issues.map((i) => `${i.path.join('.')} ${i.message}`).join(', ') });
   if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === 'P2002') return res.status(409).json({ error: 'Yeh record pehle se mojood hai (duplicate)' });
-    if (err.code === 'P2025') return res.status(404).json({ error: 'Record nahi mila' });
-    if (err.code === 'P2003') return res.status(409).json({ error: 'Yeh record doosre records se juda hai' });
+    if (err.code === 'P2002') return res.status(409).json({ error: 'This record already exists (Duplicate Entry)' });
+    if (err.code === 'P2025') return res.status(404).json({ error: 'This record not found' });
+    if (err.code === 'P2003') return res.status(409).json({ error: 'This record is linked to other records.' });
   }
   console.error('ERROR:', err?.message); // body/password kabhi log nahi hota
-  res.status(500).json({ error: 'Server mein masla aa gaya' });
+  res.status(500).json({ error: 'A Server error occured.' });
 }
 
 export const pageOf = (q: any) => {

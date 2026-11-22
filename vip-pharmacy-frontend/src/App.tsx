@@ -54,7 +54,7 @@ function Staff() {
   if (!user) return <Login onLogin={async (t: string, u: any) => { setToken(t); setUser(u); await refreshSettings(); }} />;
 
   const logout = () => { setToken(null); setUser(null); };
-  const guard = (roles: string[], el: JSX.Element) => (can(user, roles) ? el : <p className="err">Aap ko is page ki ijazat nahi.</p>);
+  const guard = (roles: string[], el: JSX.Element) => (can(user, roles) ? el : <p className="err">Access Denied.</p>);
 
   return (
     <AuthCtx.Provider value={{ user, settings, logout, refreshSettings }}>

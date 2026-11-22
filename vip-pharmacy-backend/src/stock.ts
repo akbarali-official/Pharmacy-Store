@@ -29,14 +29,14 @@ export async function allocateFefo(tx: Tx, medicineId: number, branchId: number,
     out.push({ batch: b, qty: take });
     need -= take;
   }
-  if (need > 0) throw new HttpError(409, `Stock kafi nahi ya expire hai: ${name}`);
+  if (need > 0) throw new HttpError(409, `Insufficient Stock or Expired Medicine: ${name}`);
   return out;
 }
 
 // Atomic guard: stock kabhi minus nahi hoga, chahe do cashier ek sath bechein
 export async function takeFromBatch(tx: Tx, batchId: number, qty: number) {
   const r = await tx.batch.updateMany({ where: { id: batchId, availableQty: { gte: qty } }, data: { availableQty: { decrement: qty } } });
-  if (r.count === 0) throw new HttpError(409, 'Stock abhi kisi aur sale mein nikal gaya, dobara koshish karein');
+  if (r.count === 0) throw new HttpError(409, 'The stock has just been sold in another transaction. Please try again');
 }
 
 export async function nextNumber(tx: Tx, key: string) {

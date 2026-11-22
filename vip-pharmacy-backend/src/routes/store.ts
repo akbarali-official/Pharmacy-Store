@@ -42,7 +42,7 @@ r.post('/store/orders', orderLimiter, wrap(async (req: any, res: any) => {
   const s = await requireStore();
   const b = z.object({
     customerName: z.string().min(2).max(80),
-    phone: z.string().regex(/^[0-9+\-\s]{9,18}$/, 'Phone number theek likhein'),
+    phone: z.string().regex(/^[0-9+\-\s]{9,18}$/, 'Please Enter a valid phone number.'),
     address: z.string().min(8).max(300),
     note: z.string().max(300).optional(),
     items: z.array(z.object({ medicineId: z.number().int(), qty: z.number().int().positive().max(100) })).min(1).max(40),
@@ -57,10 +57,10 @@ r.post('/store/orders', orderLimiter, wrap(async (req: any, res: any) => {
     const stock = await sellableStock(meds.map((m) => m.id), branch!.id);
     let subtotal = D(0);
     for (const m of meds) {
-      if ((stock.get(m.id) || 0) < merged.get(m.id)!) throw new HttpError(409, `${m.name}: itna stock mojood nahi`);
+      if ((stock.get(m.id) || 0) < merged.get(m.id)!) throw new HttpError(409, `${m.name}: Insufficient stock available for`);
       subtotal = subtotal.add(m.sellingPrice.mul(merged.get(m.id)!));
     }
-    if (subtotal.lt(D(s.minOrder))) throw new HttpError(422, `Kam az kam order Rs ${s.minOrder} ka hona chahiye`);
+    if (subtotal.lt(D(s.minOrder))) throw new HttpError(422, `The minimum order amount must be Rs ${s.minOrder}`);
     const fee = D(s.deliveryFee);
     const num = await nextNumber(tx, 'online');
     return tx.onlineOrder.create({
@@ -79,7 +79,7 @@ r.get('/store/track', wrap(async (req: any, res: any) => {
   await requireStore();
   const o = await prisma.onlineOrder.findUnique({ where: { orderNo: String(req.query.orderNo || '') }, include: { items: true, history: { orderBy: { id: 'asc' } } } });
   const clean = (p: string) => p.replace(/\D/g, '').slice(-9);
-  if (!o || clean(o.phone) !== clean(String(req.query.phone || ''))) throw new HttpError(404, 'Order nahi mila (order number aur phone check karein)');
+  if (!o || clean(o.phone) !== clean(String(req.query.phone || ''))) throw new HttpError(404, 'Order Not Found (Please check the order number and phone number');
   res.json({ orderNo: o.orderNo, status: o.status, total: o.total, deliveryFee: o.deliveryFee, createdAt: o.createdAt, items: o.items.map((i) => ({ name: i.nameSnap, qty: i.qty, unitPrice: i.unitPrice })), history: o.history.map((h) => ({ status: h.status, at: h.createdAt })) });
 }));
 

@@ -18,7 +18,7 @@ export const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
-  origin: (origin, cb) => (!origin || config.corsOrigins.includes(origin) ? cb(null, true) : cb(new Error('CORS: yeh website allowed nahi'))),
+  origin: (origin, cb) => (!origin || config.corsOrigins.includes(origin) ? cb(null, true) : cb(new Error('CORS: Website access is restricted'))),
 }));
 app.use(express.json({ limit: '1mb' }));
 
@@ -29,5 +29,5 @@ api.get('/health', wrap(async (_req: any, res: any) => {
 }));
 [authR, settingsR, catalogR, inventoryR, posR, partnersR, financeR, reportsR, storeR].forEach((rt) => api.use(rt));
 app.use('/api/v1', api);
-app.use((_req, res) => res.status(404).json({ error: 'Raasta nahi mila' }));
+app.use((_req, res) => res.status(404).json({ error: 'No alternative route is available' }));
 app.use(errorHandler);

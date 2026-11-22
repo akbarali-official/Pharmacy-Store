@@ -3,5 +3,5 @@ import { app } from './app';
 
 
 app.listen(config.port, () => {
-  console.log(`VIP Pharmacy API chal rahi hai: http://localhost:${config.port}/api/v1/health`);
+  console.log(`VIP Pharmacy API is running: http://localhost:${config.port}/api/v1/health`);
 });

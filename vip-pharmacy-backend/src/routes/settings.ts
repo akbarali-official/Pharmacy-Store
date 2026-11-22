@@ -11,13 +11,13 @@ export const DEFAULTS: Record<string, string> = {
   currency: 'Rs',
   timezone: 'Asia/Karachi',
   receiptHeader: '',
-  receiptFooter: 'Shukriya! Dawai wapsi ke liye receipt saath laayein.',
+  receiptFooter: 'Thank you! Please bring the receipt when returning medicines.',
   nearExpiryDays: '90',
   returnApprovalLimit: '5000',
   storeEnabled: 'false',
   deliveryFee: '150',
   minOrder: '0',
-  storeNotice: 'Prescription wali dawaiyan online nahi bechi jati.',
+  storeNotice: 'Prescription medicines cannot be sold online.',
 };
 
 export async function getSettings() {

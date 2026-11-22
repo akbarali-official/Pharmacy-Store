@@ -7,10 +7,10 @@ export const config = {
 };
 
 if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL .env mein nahi mili. .env.example ko copy karke .env banayein.');
+  console.error('DATABASE_URL .env file was not found. Please copy .env.example and create .env file.');
   process.exit(1);
 }
 if (config.jwtSecret.length < 32) {
-  console.error('JWT_SECRET .env mein kam az kam 32 characters ka hona chahiye.');
+  console.error('JWT_SECRET .env value must be at least 32 characters long.');
   process.exit(1);
 }

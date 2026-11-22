@@ -46,7 +46,7 @@ r.get('/cash/current', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any,
 
 r.post('/cash/open', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = z.object({ openingCash: z.number().min(0) }).parse(req.body);
-  if (await prisma.cashSession.findFirst({ where: { userId: req.user.id, status: 'OPEN' } })) throw new HttpError(409, 'Aap ka cash session pehle se khula hai');
+  if (await prisma.cashSession.findFirst({ where: { userId: req.user.id, status: 'OPEN' } })) throw new HttpError(409, 'Your cash session is already open.');
   const s = await prisma.cashSession.create({ data: { branchId: req.user.branchId, userId: req.user.id, openingCash: D(b.openingCash) } });
   await audit(req, 'OPEN', 'CashSession', s.id, { openingCash: b.openingCash });
   res.json(s);

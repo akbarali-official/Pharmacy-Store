@@ -12,20 +12,20 @@ export async function api(path: string, opt: { method?: string; body?: any } = {
       body: opt.body !== undefined ? JSON.stringify(opt.body) : undefined,
     });
   } catch {
-    throw new Error('Server se rabta nahi ho raha. Backend chal raha hai?');
+    throw new Error('Unable to connect to the server. Please make sure the backend is running?');
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && token && !path.startsWith('/auth/')) {
     setToken(null);
     location.href = '/staff';
   }
-  if (!res.ok) throw new Error(data.error || 'Request nakam ho gayi');
+  if (!res.ok) throw new Error(data.error || 'Request Failed');
   return data;
 }
 
 export async function download(path: string, filename: string) {
   const res = await fetch(BASE + path, { headers: { Authorization: 'Bearer ' + getToken() } });
-  if (!res.ok) throw new Error('Download nakam');
+  if (!res.ok) throw new Error('Download Failed');
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
