@@ -29,9 +29,9 @@ function Suppliers() {
     <>
       {canEdit && <button className="btn" onClick={() => setF({ name: '', phone: '', email: '', address: '', paymentTerms: '', notes: '' })}>+ Naya supplier</button>}
       <State loading={loading} error={error} />
-      {data && <div className="scroll mt"><table className="tbl"><thead><tr><th>Naam</th><th>Phone</th><th>Terms</th><th></th></tr></thead><tbody>
+      {data && <div className="scroll mt"><table className="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Terms</th><th></th></tr></thead><tbody>
         {data.map((s: any) => <tr key={s.id}><td>{s.name}</td><td>{s.phone}</td><td>{s.paymentTerms}</td><td className="right">{canEdit && <button className="btn sm sec" onClick={() => setF(s)}>Edit</button>}</td></tr>)}
-        {data.length === 0 && <tr><td colSpan={4} className="muted">Abhi koi supplier nahi.</td></tr>}
+        {data.length === 0 && <tr><td colSpan={4} className="muted">No Suppliers Available.</td></tr>}
       </tbody></table></div>}
       {f && <Modal title="Supplier" onClose={() => setF(null)}><form onSubmit={save}>
         <Field label="Naam *"><input value={f.name} onChange={set('name')} required /></Field>
@@ -49,8 +49,8 @@ function PurchaseList() {
   const [open, setOpen] = useState(false);
   const { data, loading, error, reload } = useLoad(() => api('/purchases?page=' + page), [page]);
   const act = async (id: number, what: 'receive' | 'cancel') => {
-    if (!confirmBox(what === 'receive' ? 'Maal wasool karke stock mein shamil karein?' : 'Purchase cancel karein?')) return;
-    if (await run(() => api(`/purchases/${id}/${what}`, { method: 'POST' }), what === 'receive' ? 'Stock mein shamil ho gaya' : 'Cancel ho gayi')) reload();
+    if (!confirmBox(what === 'receive' ? 'Receive Goods and Add to Stock?' : 'Cancel Purchase?')) return;
+    if (await run(() => api(`/purchases/${id}/${what}`, { method: 'POST' }), what === 'receive' ? 'Added to Stock' : 'Cancelled')) reload();
   };
   return (
     <>
@@ -63,7 +63,7 @@ function PurchaseList() {
             <td><span className={p.status === 'RECEIVED' ? 'tag' : p.status === 'DRAFT' ? 'tag amber' : 'tag red'}>{p.status}</span></td>
             <td className="right">{p.status === 'DRAFT' && <><button className="btn sm" onClick={() => act(p.id, 'receive')}>Receive</button>{' '}<button className="btn sm ghost" onClick={() => act(p.id, 'cancel')}>Cancel</button></>}</td></tr>
         ))}
-        {data.items.length === 0 && <tr><td colSpan={8} className="muted">Abhi koi purchase nahi.</td></tr>}
+        {data.items.length === 0 && <tr><td colSpan={8} className="muted">No Purchase Available.</td></tr>}
       </tbody></table></div>}
       {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
       {open && <NewPurchase onClose={() => setOpen(false)} onSaved={() => { setOpen(false); reload(); }} />}
@@ -87,10 +87,10 @@ function NewPurchase({ onClose, onSaved }: any) {
   const save = async (e: any) => {
     e.preventDefault();
     const body = { supplierId: Number(supplierId), invoiceNo: invoiceNo || undefined, discount: Number(discount) || 0, items: items.map((i) => ({ medicineId: Number(i.medicineId), batchNo: i.batchNo, expiryDate: i.expiryDate, qty: Number(i.qty), costPrice: Number(i.costPrice) })) };
-    if (await run(() => api('/purchases', { method: 'POST', body }), 'Purchase draft ban gayi. Maal aane par Receive dabayen.')) onSaved();
+    if (await run(() => api('/purchases', { method: 'POST', body }), 'Purchase Draft. Click Receive when the goods arrive.')) onSaved();
   };
   return (
-    <Modal title="Nayi purchase" onClose={onClose} wide>
+    <Modal title="New Purchase" onClose={onClose} wide>
       <form onSubmit={save}>
         <div className="grid2">
           <Field label="Supplier *"><select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required><option value="">—</option>{(sup.data || []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
@@ -105,12 +105,12 @@ function NewPurchase({ onClose, onSaved }: any) {
               <Field label="Qty"><input type="number" min={1} value={it.qty} onChange={(e) => upd(i, 'qty', e.target.value)} required /></Field>
               <Field label="Cost / unit"><input type="number" step="0.01" min={0} value={it.costPrice} onChange={(e) => upd(i, 'costPrice', e.target.value)} required /></Field>
             </div>
-            {items.length > 1 && <button type="button" className="btn sm ghost" onClick={() => setItems(items.filter((_, j) => j !== i))}>Hatayen</button>}
+            {items.length > 1 && <button type="button" className="btn sm ghost" onClick={() => setItems(items.filter((_, j) => j !== i))}>Remove</button>}
           </div>
         ))}
         <button type="button" className="btn sec sm" onClick={() => setItems([...items, { medicineId: '', batchNo: '', expiryDate: '', qty: '', costPrice: '' }])}>+ Item</button>
         <div className="row mt"><Field label="Discount"><input type="number" min={0} value={discount} onChange={(e) => setDiscount(e.target.value)} /></Field><b className="grow right">Total {fmt(total)}</b></div>
-        <button className="btn">Draft save karein</button>
+        <button className="btn">Save Draft</button>
       </form>
     </Modal>
   );

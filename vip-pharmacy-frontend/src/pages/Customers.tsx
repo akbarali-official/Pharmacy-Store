@@ -16,15 +16,15 @@ export default function Customers() {
   return (
     <>
       <div className="top"><h1>Customers</h1><div className="row"><input placeholder="Naam ya phone…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} style={{ width: 220 }} /><button className="btn" onClick={() => setF({ name: '', phone: '', email: '', address: '', notes: '' })}>+ Naya</button></div></div>
-      <p className="muted">Walk-in customer ke liye profile banana zaroori nahi — POS par seedha bill banta hai.</p>
+      <p className="muted">Creating a profile for walk-in customers is not required. You can generate a bill directly through the POS.</p>
       <State loading={loading} error={error} />
-      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Naam</th><th>Phone</th><th>Address</th><th></th></tr></thead><tbody>
+      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Address</th><th></th></tr></thead><tbody>
         {data.items.map((c: any) => <tr key={c.id}><td>{c.name}</td><td>{c.phone}</td><td>{c.address}</td><td className="right"><button className="btn sm sec" onClick={() => setF(c)}>Edit</button></td></tr>)}
-        {data.items.length === 0 && <tr><td colSpan={4} className="muted">Koi customer nahi.</td></tr>}
+        {data.items.length === 0 && <tr><td colSpan={4} className="muted">No Customer Found.</td></tr>}
       </tbody></table></div>}
       {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
       {f && <Modal title="Customer" onClose={() => setF(null)}><form onSubmit={save}>
-        <Field label="Naam *"><input value={f.name} onChange={set('name')} required /></Field>
+        <Field label="Name *"><input value={f.name} onChange={set('name')} required /></Field>
         <Field label="Phone"><input value={f.phone || ''} onChange={set('phone')} /></Field>
         <Field label="Email"><input type="email" value={f.email || ''} onChange={set('email')} /></Field>
         <Field label="Address"><input value={f.address || ''} onChange={set('address')} /></Field>

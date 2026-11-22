@@ -17,18 +17,18 @@ export default function Login({ onLogin }: { onLogin: (token: string, user: any)
     if (r) onLogin(r.token, r.user);
   };
 
-  if (needsSetup === null) return <p className="muted" style={{ padding: 20 }}>Load ho raha hai…</p>;
+  if (needsSetup === null) return <p className="muted" style={{ padding: 20 }}>Loading…</p>;
   return (
     <div className="auth">
       <div className="card">
-        <h1>{needsSetup ? 'Pehli dafa setup' : 'Staff Login'}</h1>
-        {needsSetup && <p className="muted">Owner account banayein. Password mazboot rakhein (kam az kam 8 characters) aur kisi ko na batayein.</p>}
+        <h1>{needsSetup ? 'Initial Data Setup' : 'Staff Login'}</h1>
+        {needsSetup && <p className="muted">Create an Owner Account. Use a srong password (at least 8 characters) and never share it with anyone.</p>}
         <form onSubmit={submit}>
-          {needsSetup && <Field label="Dukaan ka naam"><input value={f.storeName} onChange={set('storeName')} required /></Field>}
-          {needsSetup && <Field label="Aap ka naam"><input value={f.name} onChange={set('name')} required /></Field>}
+          {needsSetup && <Field label="Pharmacy Name"><input value={f.storeName} onChange={set('storeName')} required /></Field>}
+          {needsSetup && <Field label="Your Name"><input value={f.name} onChange={set('name')} required /></Field>}
           <Field label="Email"><input type="email" value={f.email} onChange={set('email')} required autoComplete="username" /></Field>
           <Field label="Password"><input type="password" value={f.password} onChange={set('password')} required minLength={needsSetup ? 8 : 1} autoComplete={needsSetup ? 'new-password' : 'current-password'} /></Field>
-          <button className="btn" disabled={busy} style={{ width: '100%' }}>{needsSetup ? 'Owner account banayein' : 'Login'}</button>
+          <button className="btn" disabled={busy} style={{ width: '100%' }}>{needsSetup ? 'Create Owner Account' : 'Login'}</button>
         </form>
       </div>
     </div>

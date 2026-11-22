@@ -13,16 +13,16 @@ export default function Orders() {
   const { data, loading, error, reload } = useLoad(() => api('/orders' + (status ? '?status=' + status : '')), [status]);
   const move = async (o: any, s: string) => {
     if (['REJECTED', 'CANCELLED'].includes(s) && !confirmBox(`Order ${o.orderNo} ${s} karein?`)) return;
-    if (await run(() => api(`/orders/${o.id}/status`, { method: 'PATCH', body: { status: s } }), 'Status badal gaya')) reload();
+    if (await run(() => api(`/orders/${o.id}/status`, { method: 'PATCH', body: { status: s } }), 'Status Updated')) reload();
   };
   return (
     <>
       <div className="top"><h1>Online Orders</h1>
         <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: 180 }} aria-label="Status filter"><option value="">Sab</option>{['NEW', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED', 'REJECTED'].map((s) => <option key={s}>{s}</option>)}</select>
       </div>
-      <p className="muted">Payment abhi sirf Cash on Delivery hai. Order "Confirm" karne par stock FEFO se nikalta hai (POS ke saath oversell nahi hota). Cancel karne par stock wapas aata hai.</p>
+      <p className="muted">Payment is currently available only through Cash on Delivery. When an order is confirmed, stock is deducted using FEFO (First Expiry, First Out) method. Stock is synchronized with he POS to prevent overselling. When an order is cancelled, the deducted stock is automatically restored.</p>
       <State loading={loading} error={error} />
-      {data && data.length === 0 && <p className="muted">Koi order nahi.</p>}
+      {data && data.length === 0 && <p className="muted">No Order Found.</p>}
       {data && data.map((o: any) => (
         <div key={o.id} className="card" style={{ marginBottom: 10 }}>
           <div className="row"><b className="grow">{o.orderNo}</b><span className={o.status === 'NEW' ? 'tag amber' : ['CANCELLED', 'REJECTED'].includes(o.status) ? 'tag red' : 'tag'}>{o.status}</span></div>

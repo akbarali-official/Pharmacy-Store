@@ -22,7 +22,7 @@ export default function Medicines() {
         <div className="row">
           <input placeholder="Search…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} style={{ width: 220 }} aria-label="Search medicines" />
           <select value={show} onChange={(e) => setShow(e.target.value as any)} style={{ width: 130 }}><option value="active">Active</option><option value="archived">Archived</option></select>
-          {canEdit && <button className="btn" onClick={() => setEdit({ ...EMPTY })}>+ Nayi dawai</button>}
+          {canEdit && <button className="btn" onClick={() => setEdit({ ...EMPTY })}>+ New Medicine</button>}
         </div>
       </div>
       <State loading={loading} error={error} />
@@ -30,7 +30,7 @@ export default function Medicines() {
         <div className="scroll"><table className="tbl">
           <thead><tr><th>Naam</th><th>Generic</th><th>Category</th><th className="right">Cost</th><th className="right">Price</th><th className="right">Stock</th><th></th></tr></thead>
           <tbody>
-            {data.items.length === 0 && <tr><td colSpan={7} className="muted">Koi dawai nahi mili.</td></tr>}
+            {data.items.length === 0 && <tr><td colSpan={7} className="muted">No Medicines Available.</td></tr>}
             {data.items.map((m: any) => (
               <tr key={m.id}>
                 <td>{m.name} {m.strength} <span className="muted">{m.form}</span> {m.requiresPrescription && <span className="tag amber">Rx</span>} {m.showOnline && <span className="tag">online</span>}</td>
@@ -47,7 +47,7 @@ export default function Medicines() {
           </tbody>
         </table></div>
       )}
-      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page} · kul {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page} · kul {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
       {edit && <MedForm initial={edit} cats={cats.data || []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); cats.reload(); }} />}
       {stockFor && <StockForm med={stockFor} onClose={() => setStockFor(null)} onSaved={() => { setStockFor(null); reload(); }} />}
     </>
@@ -73,7 +73,7 @@ function MedForm({ initial, cats, onClose, onSaved }: any) {
     } catch (er: any) { if (/pehle se hai/.test(er.message)) setDup(er.message); else run(() => Promise.reject(er)); }
   };
   return (
-    <Modal title={f.id ? 'Dawai edit' : 'Nayi dawai'} onClose={onClose} wide>
+    <Modal title={f.id ? 'Edit Medicine' : 'New Medicine'} onClose={onClose} wide>
       <form onSubmit={save}>
         <div className="grid2">
           <Field label="Naam *"><input value={f.name} onChange={set('name')} required /></Field>
@@ -88,11 +88,11 @@ function MedForm({ initial, cats, onClose, onSaved }: any) {
           <Field label="Selling price *"><input type="number" step="0.01" min={0} value={f.sellingPrice} onChange={set('sellingPrice')} required /></Field>
           <Field label="Reorder level"><input type="number" min={0} value={f.reorderLevel} onChange={set('reorderLevel')} /></Field>
           <Field label="Category"><select value={f.categoryId} onChange={set('categoryId')}><option value="">—</option>{cats.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
-          <Field label="Ya nayi category likhein"><input value={newCat} onChange={(e) => setNewCat(e.target.value)} /></Field>
+          <Field label="Add New Category"><input value={newCat} onChange={(e) => setNewCat(e.target.value)} /></Field>
           <Field label="Storage notes"><input value={f.storageNotes || ''} onChange={set('storageNotes')} /></Field>
         </div>
-        <label className="row"><input type="checkbox" checked={f.requiresPrescription} onChange={set('requiresPrescription')} /> Prescription lazmi (Rx) — online nahi bechi jayegi</label>
-        <label className="row"><input type="checkbox" checked={f.showOnline} onChange={set('showOnline')} /> Online store mein dikhayen</label>
+        <label className="row"><input type="checkbox" checked={f.requiresPrescription} onChange={set('requiresPrescription')} /> Prescription Required(Rx) — Not Available for Online Sale</label>
+        <label className="row"><input type="checkbox" checked={f.showOnline} onChange={set('showOnline')} /> Show in Online Store</label>
         {dup && <p className="err mt">{dup} <label><input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} /> force</label></p>}
         <button className="btn mt">Save</button>
       </form>
@@ -114,7 +114,7 @@ function StockForm({ med, onClose, onSaved }: any) {
         <Field label="Expiry date"><input type="date" value={f.expiryDate} onChange={set('expiryDate')} required /></Field>
         <Field label="Quantity"><input type="number" min={1} value={f.qty} onChange={set('qty')} required /></Field>
         <Field label="Cost price (per unit)"><input type="number" step="0.01" min={0} value={f.costPrice} onChange={set('costPrice')} required /></Field>
-        <p className="muted">Yeh opening stock / seedha stock-in hai. Supplier se maal ke liye "Purchases" use karein. Expiry {f.expiryDate && dOnly(f.expiryDate)}.</p>
+        <p className="muted">This is opening stock / direct stock-in. Use "Purchases" for stock received from suppliers. Expiry {f.expiryDate && dOnly(f.expiryDate)}.</p>
         <button className="btn">Save</button>
       </form>
     </Modal>

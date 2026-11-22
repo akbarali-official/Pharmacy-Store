@@ -28,10 +28,10 @@ function Alerts() {
       <State loading={loading} error={error} />
       {data && (
         <div className="grid2">
-          <div><h2>Stock khatam ({data.outOfStock.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.outOfStock.map((m: any) => <tr key={m.id}><td>{med(m)}</td></tr>)}{data.outOfStock.length === 0 && <tr><td className="muted">Koi nahi</td></tr>}</tbody></table></div></div>
-          <div><h2>Low stock ({data.lowStock.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.lowStock.map((m: any) => <tr key={m.id}><td>{med(m)}</td><td className="right">{m.stock} / {m.reorderLevel}</td></tr>)}{data.lowStock.length === 0 && <tr><td className="muted">Koi nahi</td></tr>}</tbody></table></div></div>
-          <div className="mt"><h2>Jald expire ({data.nearExpiry.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.nearExpiry.map(batchRow)}{data.nearExpiry.length === 0 && <tr><td className="muted">Koi nahi</td></tr>}</tbody></table></div></div>
-          <div className="mt"><h2 className="err">Expire ho chuki ({data.expired.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.expired.map(batchRow)}{data.expired.length === 0 && <tr><td className="muted">Koi nahi</td></tr>}</tbody></table></div></div>
+          <div><h2>Out Of Stock ({data.outOfStock.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.outOfStock.map((m: any) => <tr key={m.id}><td>{med(m)}</td></tr>)}{data.outOfStock.length === 0 && <tr><td className="muted">None</td></tr>}</tbody></table></div></div>
+          <div><h2>Low stock ({data.lowStock.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.lowStock.map((m: any) => <tr key={m.id}><td>{med(m)}</td><td className="right">{m.stock} / {m.reorderLevel}</td></tr>)}{data.lowStock.length === 0 && <tr><td className="muted">None</td></tr>}</tbody></table></div></div>
+          <div className="mt"><h2>Expiring Soon ({data.nearExpiry.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.nearExpiry.map(batchRow)}{data.nearExpiry.length === 0 && <tr><td className="muted">None</td></tr>}</tbody></table></div></div>
+          <div className="mt"><h2 className="err">Expired({data.expired.length})</h2><div className="scroll"><table className="tbl"><tbody>{data.expired.map(batchRow)}{data.expired.length === 0 && <tr><td className="muted">None</td></tr>}</tbody></table></div></div>
         </div>
       )}
     </>
@@ -47,11 +47,11 @@ function Batches({ canEdit }: { canEdit: boolean }) {
   return (
     <>
       <div className="row" style={{ marginBottom: 10 }}>
-        <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }} style={{ width: 200 }}><option value="instock">Stock mojood</option><option value="expiring">Jald expire</option><option value="expired">Expire ho chuki</option><option value="">Sab</option></select>
+        <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }} style={{ width: 200 }}><option value="instock">Current Stock</option><option value="expiring">Expiring Soon</option><option value="expired">Expired</option><option value="">All</option></select>
         <button className="btn sec sm" onClick={() => run(() => download('/reports/stock.csv', 'stock.csv'))}>CSV</button>
       </div>
       <State loading={loading} error={error} />
-      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Dawai</th><th>Batch</th><th>Expiry</th><th className="right">Qty</th><th>Status</th><th></th></tr></thead><tbody>
+      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th className="right">Qty</th><th>Status</th><th></th></tr></thead><tbody>
         {data.items.map((b: any) => {
           const exp = b.expiryDate.slice(0, 10) < today;
           return (
@@ -60,9 +60,9 @@ function Batches({ canEdit }: { canEdit: boolean }) {
               <td className="right">{canEdit && <><button className="btn sm sec" onClick={() => setAdj(b)}>Adjust</button>{' '}<button className="btn sm ghost" onClick={async () => { if (await run(() => api('/inventory/batches/' + b.id, { method: 'PATCH', body: { status: b.status === 'ACTIVE' ? 'QUARANTINE' : 'ACTIVE' } }))) reload(); }}>{b.status === 'ACTIVE' ? 'Quarantine' : 'Release'}</button></>}</td></tr>
           );
         })}
-        {data.items.length === 0 && <tr><td colSpan={6} className="muted">Kuch nahi.</td></tr>}
+        {data.items.length === 0 && <tr><td colSpan={6} className="muted">None.</td></tr>}
       </tbody></table></div>}
-      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page} · kul {data.total}</span><button className="btn sec sm" disabled={page * 30 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page} · open {data.total}</span><button className="btn sec sm" disabled={page * 30 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
       {adj && <Adjust batch={adj} onClose={() => setAdj(null)} onSaved={() => { setAdj(null); reload(); }} />}
     </>
   );
@@ -74,10 +74,10 @@ function Adjust({ batch, onClose, onSaved }: any) {
   const save = async (e: any) => { e.preventDefault(); if (await run(() => api('/inventory/adjust', { method: 'POST', body: { batchId: batch.id, delta: Number(delta), reason } }), 'Adjust ho gaya')) onSaved(); };
   return (
     <Modal title={`Adjust: ${batch.medicine.name} (${batch.batchNo})`} onClose={onClose}>
-      <p className="muted">Maujooda qty: {batch.availableQty}. Kam karne ke liye minus likhein (jaise -5). Wajah lazmi hai aur record hoti hai.</p>
+      <p className="muted">Current qty: {batch.availableQty}. Enter a negative value to reduce the amount(e.g, -5 ). A reason is required, and the action will be recorded.</p>
       <form onSubmit={save}>
-        <Field label="Tabdeeli (+/-)"><input type="number" value={delta} onChange={(e) => setDelta(e.target.value)} required /></Field>
-        <Field label="Wajah (damaged / lost / ginti ka farq…)"><input value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} /></Field>
+        <Field label="Changing (+/-)"><input type="number" value={delta} onChange={(e) => setDelta(e.target.value)} required /></Field>
+        <Field label="Reason (damaged / lost / Counting Difference…)"><input value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} /></Field>
         <button className="btn">Save</button>
       </form>
     </Modal>
@@ -90,10 +90,10 @@ function Moves() {
   return (
     <>
       <State loading={loading} error={error} />
-      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Waqt</th><th>Dawai / Batch</th><th>Type</th><th className="right">Qty</th><th>Wajah / Ref</th></tr></thead><tbody>
+      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Waqt</th><th>Medicine / Batch</th><th>Type</th><th className="right">Qty</th><th>Reason / Ref</th></tr></thead><tbody>
         {data.items.map((m: any) => <tr key={m.id}><td>{dt(m.createdAt)}</td><td>{m.batch.medicine.name} / {m.batch.batchNo}</td><td>{m.type}</td><td className="right">{m.qty}</td><td>{m.reason || ''} {m.refType ? `${m.refType}#${m.refId}` : ''}</td></tr>)}
       </tbody></table></div>}
-      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * 30 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * 30 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
     </>
   );
 }
@@ -102,11 +102,11 @@ function Recon() {
   const { data, loading, error } = useLoad(() => api('/inventory/reconcile'));
   return (
     <>
-      <p className="muted">Har batch ka balance uski movements ke jama se match hona chahiye. Farq ho to kisi ne database mein seedha tabdeeli ki hai ya koi bug hai.</p>
+      <p className="muted">Each batch balance must match the total of its stock movements. Any discrepancy may indicate a direct database modification or a system bug</p>
       <State loading={loading} error={error} />
       {data && (data.mismatches.length === 0
-        ? <p>✔ {data.checked} batches check hui, sab theek hain.</p>
-        : <table className="tbl"><thead><tr><th>Dawai</th><th>Batch</th><th>Balance</th><th>Movements</th></tr></thead><tbody>{data.mismatches.map((m: any) => <tr key={m.batchId}><td>{m.medicine}</td><td>{m.batchNo}</td><td>{m.balance}</td><td>{m.movementsTotal}</td></tr>)}</tbody></table>)}
+        ? <p>✔ {data.checked} All Batches Verified. Everything is Correct.</p>
+        : <table className="tbl"><thead><tr><th>Medicine</th><th>Batch</th><th>Balance</th><th>Movements</th></tr></thead><tbody>{data.mismatches.map((m: any) => <tr key={m.batchId}><td>{m.medicine}</td><td>{m.batchNo}</td><td>{m.balance}</td><td>{m.movementsTotal}</td></tr>)}</tbody></table>)}
     </>
   );
 }

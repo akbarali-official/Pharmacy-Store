@@ -24,7 +24,7 @@ export default function POS() {
   }, [q]);
 
   const add = (m: any) => {
-    if (m.stock <= 0) return toast('Stock nahi hai', 'err');
+    if (m.stock <= 0) return toast('Out of Stock', 'err');
     setCart((c) => {
       const ex = c.find((x) => x.id === m.id);
       if (ex) return c.map((x) => (x.id === m.id ? { ...x, qty: Math.min(x.qty + 1, m.stock) } : x));
@@ -53,7 +53,7 @@ export default function POS() {
       <h1>POS / Billing</h1>
       <div className="pos">
         <div className="card">
-          <input ref={input} autoFocus placeholder="Dawai ka naam, generic, barcode ya SKU…" value={q} onChange={(e) => setQ(e.target.value)}
+          <input ref={input} autoFocus placeholder="Medicine Name, generic, barcode ya SKU…" value={q} onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && results.length >= 1 && add(results[0])} aria-label="Dawai search" />
           <div style={{ marginTop: 8 }}>
             {results.map((m) => (
@@ -62,18 +62,18 @@ export default function POS() {
                 <span>{fmt(m.sellingPrice)} · <span className={m.stock <= 0 ? 'err' : 'muted'}>stock {m.stock}</span></span>
               </button>
             ))}
-            {q && results.length === 0 && <p className="muted">Kuch nahi mila.</p>}
+            {q && results.length === 0 && <p className="muted">Nothing Found.</p>}
           </div>
         </div>
         <div className="card">
           <h2>Bill</h2>
-          {cart.length === 0 && <p className="muted">Cart khali hai. Search karke dawai add karein (Enter dabane se pehli result add hoti hai).</p>}
+          {cart.length === 0 && <p className="muted">Your cart is empty. Search for a medicine to add it. Press Enter to add the first search result.</p>}
           {cart.map((x) => (
             <div key={x.id} className="row" style={{ marginBottom: 6 }}>
               <span className="grow">{x.name} {x.strength}<br /><span className="muted">{fmt(x.sellingPrice)}</span></span>
               <input type="number" min={1} max={x.stock} value={x.qty} onChange={(e) => setQty(x.id, e.target.value)} style={{ width: 70 }} aria-label={'Quantity ' + x.name} />
               <b style={{ width: 80, textAlign: 'right' }}>{fmt(Number(x.sellingPrice) * x.qty)}</b>
-              <button className="btn ghost" onClick={() => setCart(cart.filter((y) => y.id !== x.id))} aria-label="Hatayen">✕</button>
+              <button className="btn ghost" onClick={() => setCart(cart.filter((y) => y.id !== x.id))} aria-label="Remove">✕</button>
             </div>
           ))}
           {cart.length > 0 && (
@@ -85,10 +85,10 @@ export default function POS() {
                   <select value={method} onChange={(e) => setMethod(e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="BANK">Bank transfer</option><option value="OTHER">Other</option></select>
                 </label>
               </div>
-              {method === 'CASH' && <label className="f"><span>Customer ne diye (khali = exact)</span><input type="number" min={0} value={received} onChange={(e) => setReceived(e.target.value)} placeholder={String(total)} /></label>}
-              {needRx && <label className="row" style={{ marginBottom: 8 }}><input type="checkbox" checked={rx} onChange={(e) => setRx(e.target.checked)} /> Prescription dekh li gayi hai (pharmacist ne verify ki)</label>}
+              {method === 'CASH' && <label className="f"><span>Amount Received from Customer (Exact Amount)</span><input type="number" min={0} value={received} onChange={(e) => setReceived(e.target.value)} placeholder={String(total)} /></label>}
+              {needRx && <label className="row" style={{ marginBottom: 8 }}><input type="checkbox" checked={rx} onChange={(e) => setRx(e.target.checked)} /> Prescription Reviewed and Verified by Pharmacist.</label>}
               <div className="row"><span className="grow muted">Subtotal {fmt(subtotal)}{disc > 0 && ` − ${fmt(disc)}`}</span><span className="total">{fmt(total)}</span></div>
-              {method === 'CASH' && <div className="row"><span className="grow">Wapas karna hai</span><b>{fmt(change)}</b></div>}
+              {method === 'CASH' && <div className="row"><span className="grow">Return</span><b>{fmt(change)}</b></div>}
               <button className="btn mt" style={{ width: '100%' }} disabled={busy || (needRx && !rx) || paid < total} onClick={checkout}>{busy ? 'Ho raha hai…' : 'Bill banayein'}</button>
             </>
           )}

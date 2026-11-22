@@ -57,7 +57,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={'modal' + (wide ? ' wide' : '')} role="dialog" aria-modal="true" aria-label={title}>
-        <div className="modal-h"><h3>{title}</h3><button className="btn ghost" onClick={onClose} aria-label="Band karein">✕</button></div>
+        <div className="modal-h"><h3>{title}</h3><button className="btn ghost" onClick={onClose} aria-label="Close">✕</button></div>
         <div className="modal-b">{children}</div>
       </div>
     </div>

@@ -24,19 +24,19 @@ export default function Reports() {
             <div className="card stat"><b>{fmt(d.discounts)}</b><span>Discounts</span></div>
             <div className="card stat"><b>{fmt(d.refunds)}</b><span>Refunds</span></div>
             <div className="card stat"><b>{fmt(d.netSales)}</b><span>Net sales</span></div>
-            <div className="card stat"><b>{fmt(d.estimatedProfit)}</b><span>Andaazan munafa (cost ke baad)</span></div>
-            <div className="card stat"><b>{fmt(d.expenses)}</b><span>Kharche</span></div>
-            <div className="card stat"><b>{fmt(d.profitAfterExpenses)}</b><span>Munafa kharche ke baad</span></div>
-            <div className="card stat"><b>{fmt(d.stockValuationAtCost)}</b><span>Stock ki qeemat (cost par)</span></div>
+            <div className="card stat"><b>{fmt(d.estimatedProfit)}</b><span>Estimated Profit (After Costs)</span></div>
+            <div className="card stat"><b>{fmt(d.expenses)}</b><span>Expenses</span></div>
+            <div className="card stat"><b>{fmt(d.profitAfterExpenses)}</b><span>Profit after Expenses</span></div>
+            <div className="card stat"><b>{fmt(d.stockValuationAtCost)}</b><span>Stock Value at Cost</span></div>
           </div>
           <p className="muted">{d.estimatedProfitNote}</p>
           <div className="grid2">
-            <div><h2>Payment methods</h2><table className="tbl"><tbody>{d.payments.map((p: any) => <tr key={p.method}><td>{p.method}</td><td className="right">{fmt(p.amount)}</td></tr>)}{d.payments.length === 0 && <tr><td className="muted">Data nahi</td></tr>}</tbody></table>
-              <h2 className="mt">Kharche (category)</h2><table className="tbl"><tbody>{d.expensesByCategory.map((p: any) => <tr key={p.category}><td>{p.category}</td><td className="right">{fmt(p.amount)}</td></tr>)}{d.expensesByCategory.length === 0 && <tr><td className="muted">Data nahi</td></tr>}</tbody></table></div>
-            <div><h2>Roz ki sale</h2><table className="tbl"><tbody>{d.byDay.map((p: any) => <tr key={p.day}><td>{p.day}</td><td>{p.count} bills</td><td className="right">{fmt(p.total)}</td></tr>)}{d.byDay.length === 0 && <tr><td className="muted">Data nahi</td></tr>}</tbody></table></div>
+            <div><h2>Payment methods</h2><table className="tbl"><tbody>{d.payments.map((p: any) => <tr key={p.method}><td>{p.method}</td><td className="right">{fmt(p.amount)}</td></tr>)}{d.payments.length === 0 && <tr><td className="muted">No Data Available</td></tr>}</tbody></table>
+              <h2 className="mt">Expense (category)</h2><table className="tbl"><tbody>{d.expensesByCategory.map((p: any) => <tr key={p.category}><td>{p.category}</td><td className="right">{fmt(p.amount)}</td></tr>)}{d.expensesByCategory.length === 0 && <tr><td className="muted">No Data Available</td></tr>}</tbody></table></div>
+            <div><h2>Daily Sale</h2><table className="tbl"><tbody>{d.byDay.map((p: any) => <tr key={p.day}><td>{p.day}</td><td>{p.count} bills</td><td className="right">{fmt(p.total)}</td></tr>)}{d.byDay.length === 0 && <tr><td className="muted">No Data Available</td></tr>}</tbody></table></div>
           </div>
-          <h2 className="mt">Top dawaiyan</h2>
-          <div className="scroll"><table className="tbl"><thead><tr><th>Dawai</th><th className="right">Qty</th><th className="right">Amdani</th></tr></thead><tbody>{d.topItems.map((t: any) => <tr key={t.name}><td>{t.name}</td><td className="right">{t.qty}</td><td className="right">{fmt(t.revenue)}</td></tr>)}</tbody></table></div>
+          <h2 className="mt">Top Medicine</h2>
+          <div className="scroll"><table className="tbl"><thead><tr><th>Medicine</th><th className="right">Qty</th><th className="right">Income</th></tr></thead><tbody>{d.topItems.map((t: any) => <tr key={t.name}><td>{t.name}</td><td className="right">{t.qty}</td><td className="right">{fmt(t.revenue)}</td></tr>)}</tbody></table></div>
         </>
       )}
     </>

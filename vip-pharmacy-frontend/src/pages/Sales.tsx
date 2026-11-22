@@ -24,9 +24,9 @@ export default function Sales() {
           const refunded = s.returns.reduce((t: number, r: any) => t + Number(r.refundAmount), 0);
           return <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setOpen(s.id)}><td><a href="#!" onClick={(e) => e.preventDefault()}>{s.invoiceNo}</a></td><td>{dt(s.createdAt)}</td><td>{s.cashier.name}</td><td className="right">{fmt(s.total)}</td><td>{s.payments.map((p: any) => p.method).join('+')}</td><td>{refunded > 0 && <span className="tag amber">{fmt(refunded)}</span>}</td></tr>;
         })}
-        {data.items.length === 0 && <tr><td colSpan={6} className="muted">Koi sale nahi mili.</td></tr>}
+        {data.items.length === 0 && <tr><td colSpan={6} className="muted">No Sales Found.</td></tr>}
       </tbody></table></div>}
-      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page} · kul {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page} · open {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
       {open && <SaleDetail id={open} onClose={() => setOpen(null)} onChanged={reload} />}
     </>
   );
@@ -44,8 +44,8 @@ function SaleDetail({ id, onClose, onChanged }: any) {
   const doReturn = async (e: any) => {
     e.preventDefault();
     const items = Object.entries(qty).filter(([, v]) => Number(v) > 0).map(([k, v]) => ({ saleItemId: Number(k), qty: Number(v) }));
-    if (!items.length) return run(() => Promise.reject(new Error('Wapas hone wali quantity likhein')));
-    if (await run(() => api(`/sales/${id}/return`, { method: 'POST', body: { items, refundMethod: method, restock, reason } }), 'Return/refund record ho gaya')) { setQty({}); setReason(''); reload(); onChanged(); }
+    if (!items.length) return run(() => Promise.reject(new Error('Enter the Quantity to Be Returned')));
+    if (await run(() => api(`/sales/${id}/return`, { method: 'POST', body: { items, refundMethod: method, restock, reason } }), 'Return/refund recorded')) { setQty({}); setReason(''); reload(); onChanged(); }
   };
 
   return (
@@ -55,7 +55,7 @@ function SaleDetail({ id, onClose, onChanged }: any) {
       {sale && view === 'detail' && (
         <>
           <div className="row"><span className="grow muted">{dt(sale.createdAt)} · {sale.cashier.name}</span><button className="btn sec sm" onClick={() => setView('receipt')}>Receipt / Reprint</button></div>
-          <table className="tbl mt"><thead><tr><th>Item</th><th>Batch</th><th className="right">Qty</th><th className="right">Rate</th><th className="right">Total</th><th>Wapas</th></tr></thead><tbody>
+          <table className="tbl mt"><thead><tr><th>Item</th><th>Batch</th><th className="right">Qty</th><th className="right">Rate</th><th className="right">Total</th><th>Return</th></tr></thead><tbody>
             {sale.items.map((i: any) => {
               const back = i.returnItems.reduce((s: number, r: any) => s + r.qty, 0);
               const left = i.qty - back;
@@ -64,15 +64,15 @@ function SaleDetail({ id, onClose, onChanged }: any) {
             })}
           </tbody></table>
           <p className="right">Subtotal {fmt(sale.subtotal)} · Discount {fmt(sale.discount)} · <b>Total {fmt(sale.total)}</b></p>
-          {sale.returns.length > 0 && <p className="muted">Pehle ke returns: {sale.returns.map((r: any) => fmt(r.refundAmount)).join(', ')}</p>}
+          {sale.returns.length > 0 && <p className="muted">Previous Returns: {sale.returns.map((r: any) => fmt(r.refundAmount)).join(', ')}</p>}
           <form onSubmit={doReturn} className="card mt">
             <h3>Return / Refund</h3>
             <div className="grid2">
               <Field label="Refund method"><select value={method} onChange={(e) => setMethod(e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="BANK">Bank</option><option value="OTHER">Other</option></select></Field>
-              <Field label="Wajah *"><input value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} /></Field>
+              <Field label="Reason *"><input value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} /></Field>
             </div>
-            <label className="row"><input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Maal wapas stock mein shamil karein (sealed/theek hai; expire hua to khud nahi hoga)</label>
-            <button className="btn mt">Return record karein</button>
+            <label className="row"><input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Add Returned Stock to Inventory (Only sealed and undamaged medicines.  Expired medicines will not be added automatically).</label>
+            <button className="btn mt">Record Return</button>
           </form>
         </>
       )}

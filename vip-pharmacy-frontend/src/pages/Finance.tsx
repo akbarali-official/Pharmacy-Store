@@ -27,31 +27,31 @@ function Cash() {
     <div className="card" style={{ maxWidth: 520 }}>
       <State loading={loading} error={error} />
       {!loading && !s && (
-        <form onSubmit={async (e) => { e.preventDefault(); if (await run(() => api('/cash/open', { method: 'POST', body: { openingCash: Number(opening) } }), 'Cash session khul gaya')) reload(); }}>
-          <h2>Cash session shuru karein</h2>
-          <Field label="Galle mein shuru ki raqam"><input type="number" min={0} value={opening} onChange={(e) => setOpening(e.target.value)} required /></Field>
-          <button className="btn">Session kholein</button>
+        <form onSubmit={async (e) => { e.preventDefault(); if (await run(() => api('/cash/open', { method: 'POST', body: { openingCash: Number(opening) } }), 'Cash Session Opened')) reload(); }}>
+          <h2>Start Cash Session</h2>
+          <Field label="Opening Cash Amount"><input type="number" min={0} value={opening} onChange={(e) => setOpening(e.target.value)} required /></Field>
+          <button className="btn">Open Session</button>
         </form>
       )}
       {s && (
         <>
-          <h2>Session khula hai ({dt(s.openedAt)})</h2>
+          <h2>Session is open ({dt(s.openedAt)})</h2>
           <div className="row"><span className="grow">Shuru</span><b>{fmt(s.openingCash)}</b></div>
           <div className="row"><span className="grow">+ Cash sales</span><b>{fmt(s.cashIn)}</b></div>
           <div className="row"><span className="grow">− Cash refunds</span><b>{fmt(s.cashRefund)}</b></div>
           <div className="row"><span className="grow">− Cash expenses</span><b>{fmt(s.cashExp)}</b></div>
           <div className="row"><span className="grow"><b>Expected</b></span><b>{fmt(s.expected)}</b></div>
-          <form className="mt" onSubmit={async (e) => { e.preventDefault(); if (!confirmBox('Session band karein? Yeh wapas nahi hoga.')) return; const r = await run(() => api('/cash/close', { method: 'POST', body: { countedCash: Number(counted), note: note || undefined } }), 'Session band ho gaya'); if (r) { toast_variance(r); reload(); } }}>
+          <form className="mt" onSubmit={async (e) => { e.preventDefault(); if (!confirmBox('Close Cash Session?Will it be possible to reopen it?')) return; const r = await run(() => api('/cash/close', { method: 'POST', body: { countedCash: Number(counted), note: note || undefined } }), 'Session band ho gaya'); if (r) { toast_variance(r); reload(); } }}>
             <Field label="Gine hui asal raqam"><input type="number" min={0} value={counted} onChange={(e) => setCounted(e.target.value)} required /></Field>
             <Field label="Note"><input value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-            <button className="btn danger">Session band karein</button>
+            <button className="btn danger">Close Session</button>
           </form>
         </>
       )}
     </div>
   );
 }
-const toast_variance = (r: any) => alert(`Farq (variance): ${fmt(r.variance)}\n(+ zyada, − kam)`);
+const toast_variance = (r: any) => alert(`Difference (variance): ${fmt(r.variance)}\n(+ Excess, − Shortage)`);
 
 function Expenses() {
   const [from, setFrom] = useState('');
@@ -63,19 +63,19 @@ function Expenses() {
     <>
       <form className="card" onSubmit={async (e) => { e.preventDefault(); if (await run(() => api('/expenses', { method: 'POST', body: { ...f, amount: Number(f.amount), date: f.date || undefined } }), 'Kharcha record ho gaya')) { setF({ ...f, amount: '', description: '' }); reload(); } }}>
         <div className="grid2">
-          <Field label="Category (bijli, kiraya, tankhwah…)"><input value={f.category} onChange={set('category')} required /></Field>
-          <Field label="Raqam"><input type="number" min={0.01} step="0.01" value={f.amount} onChange={set('amount')} required /></Field>
+          <Field label="Category (Electricity, Rent, Salary…)"><input value={f.category} onChange={set('category')} required /></Field>
+          <Field label="Amount"><input type="number" min={0.01} step="0.01" value={f.amount} onChange={set('amount')} required /></Field>
           <Field label="Method"><select value={f.method} onChange={set('method')}><option value="CASH">Cash</option><option value="BANK">Bank</option><option value="CARD">Card</option><option value="OTHER">Other</option></select></Field>
-          <Field label="Tareekh"><input type="date" value={f.date} onChange={set('date')} /></Field>
+          <Field label="Date"><input type="date" value={f.date} onChange={set('date')} /></Field>
         </div>
-        <Field label="Tafseel"><input value={f.description} onChange={set('description')} /></Field>
-        <button className="btn">Kharcha shamil karein</button>
+        <Field label="Details"><input value={f.description} onChange={set('description')} /></Field>
+        <button className="btn">Add Expense</button>
       </form>
       <div className="row mt"><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 150 }} aria-label="Se" /><input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 150 }} aria-label="Tak" />{data && <b>Kul: {fmt(data.sum)}</b>}</div>
       <State loading={loading} error={error} />
-      {data && <div className="scroll mt"><table className="tbl"><thead><tr><th>Tareekh</th><th>Category</th><th>Tafseel</th><th>Method</th><th>Kis ne</th><th className="right">Raqam</th></tr></thead><tbody>
+      {data && <div className="scroll mt"><table className="tbl"><thead><tr><th>Date</th><th>Category</th><th>Detail</th><th>Method</th><th>By Whom?</th><th className="right">Amount</th></tr></thead><tbody>
         {data.items.map((x: any) => <tr key={x.id}><td>{dt(x.date)}</td><td>{x.category}</td><td>{x.description}</td><td>{x.method}</td><td>{x.user.name}</td><td className="right">{fmt(x.amount)}</td></tr>)}
-        {data.items.length === 0 && <tr><td colSpan={6} className="muted">Koi kharcha nahi.</td></tr>}
+        {data.items.length === 0 && <tr><td colSpan={6} className="muted">No Expenses.</td></tr>}
       </tbody></table></div>}
     </>
   );
@@ -86,7 +86,7 @@ function History() {
   return (
     <>
       <State loading={loading} error={error} />
-      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Khula</th><th>Cashier</th><th className="right">Shuru</th><th className="right">Expected</th><th className="right">Gina</th><th className="right">Farq</th><th>Status</th></tr></thead><tbody>
+      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Open</th><th>Cashier</th><th className="right">Start</th><th className="right">Expected</th><th className="right">Count</th><th className="right">Difference</th><th>Status</th></tr></thead><tbody>
         {data.map((s: any) => <tr key={s.id}><td>{dt(s.openedAt)}</td><td>{s.user.name}</td><td className="right">{fmt(s.openingCash)}</td><td className="right">{s.expectedCash != null && fmt(s.expectedCash)}</td><td className="right">{s.closingCash != null && fmt(s.closingCash)}</td><td className={'right ' + (Number(s.variance) !== 0 && s.variance != null ? 'err' : '')}>{s.variance != null && fmt(s.variance)}</td><td>{s.status}</td></tr>)}
       </tbody></table></div>}
     </>
