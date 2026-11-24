@@ -13,6 +13,7 @@ import { r as partnersR } from './routes/partners';
 import { r as financeR } from './routes/finance';
 import { r as reportsR } from './routes/reports';
 import { r as storeR } from './routes/store';
+import { r as payablesR } from './routes/payables';
 import { r as toolsR } from './routes/tools';
 
 export const app = express();
@@ -28,7 +29,7 @@ api.get('/health', wrap(async (_req: any, res: any) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ ok: true, time: new Date().toISOString() });
 }));
-[authR, settingsR, catalogR, inventoryR, posR, partnersR, financeR, reportsR, storeR, toolsR].forEach((rt) => api.use(rt));
+[authR, settingsR, catalogR, inventoryR, posR, partnersR, financeR, reportsR, storeR, toolsR, payablesR].forEach((rt) => api.use(rt));
 app.use('/api/v1', api);
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use(errorHandler);

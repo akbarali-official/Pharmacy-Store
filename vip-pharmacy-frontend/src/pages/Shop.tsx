@@ -5,6 +5,7 @@ import { fmt, Modal, toast, run, Field } from '../ui';
 // Public online store for customers (no login). Payment: Cash on Delivery.
 // Converts a Pakistani phone number to WhatsApp format (92...)
 const waNum = (p: string) => { let d = (p || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '92' + d.slice(1); return d; };
+const COLORS = ['#0a6b50', '#1f7a8c', '#7a4fb3', '#c0662b', '#b23a6b', '#3d6fb4', '#6b8e23'];
 
 export default function Shop() {
   const [info, setInfo] = useState<any>(null);
@@ -15,11 +16,11 @@ export default function Shop() {
   const [page, setPage] = useState(1);
   const [prods, setProds] = useState<any>(null);
   const [cart, setCart] = useState<Record<number, { p: any; qty: number }>>(() => { try { return JSON.parse(localStorage.getItem('vip_shop_cart') || '{}'); } catch { return {}; } });
-  useEffect(() => { try { localStorage.setItem('vip_shop_cart', JSON.stringify(cart)); } catch { /* ignore */ } }, [cart]);
   const [showCart, setShowCart] = useState(false);
   const [track, setTrack] = useState(false);
   const [placed, setPlaced] = useState<any>(null);
 
+  useEffect(() => { try { localStorage.setItem('vip_shop_cart', JSON.stringify(cart)); } catch { /* ignore */ } }, [cart]);
   useEffect(() => { api('/store/info').then(setInfo).catch((e) => setErr(e.message)); api('/categories').then(setCats).catch(() => {}); }, []);
   useEffect(() => { if (info?.storeName) document.title = info.storeName + ' — Online Pharmacy'; }, [info]);
   useEffect(() => {
@@ -32,48 +33,75 @@ export default function Shop() {
   const count = items.reduce((s, x) => s + x.qty, 0);
   const sub = items.reduce((s, x) => s + Number(x.p.sellingPrice) * x.qty, 0);
   const add = (p: any) => setCart((c) => ({ ...c, [p.id]: { p, qty: Math.min((c[p.id]?.qty || 0) + 1, p.available) } }));
+  const dec = (p: any) => setCart((c) => { const n = { ...c }; const cur = n[p.id]?.qty || 0; if (cur <= 1) delete n[p.id]; else n[p.id] = { p, qty: cur - 1 }; return n; });
 
   if (err && !info) return <div className="shop-w"><p className="err">{err}</p></div>;
-  if (!info) return <p className="muted" style={{ padding: 20 }}>Loading…</p>;
+  if (!info) return <div className="shop-w"><div className="skeleton" style={{ height: 160, marginTop: 20 }} /></div>;
 
   return (
     <>
-      <header className="shop-h">
-        <div className="shop-w row" style={{ padding: 0 }}>
-          <div className="grow"><b style={{ fontSize: '1.3rem' }}>{info.storeName}</b><div style={{ opacity: .85, fontSize: '.9rem' }}>{info.address} {info.phone && `· ${info.phone}`}</div></div>
-          {info.phone && <a className="btn sec sm" href={'https://wa.me/' + waNum(info.phone)} target="_blank" rel="noreferrer">Ask on WhatsApp</a>}
-          <button className="btn sec sm" onClick={() => setTrack(true)}>Track order</button>
-          <button className="btn sm" style={{ background: '#fff', color: 'var(--green-d)' }} onClick={() => setShowCart(true)}>Cart ({count})</button>
-        </div>
-      </header>
+      <div className="shop-top"><div className="in">
+        <div className="shop-brand"><i>✚</i>{info.storeName}</div>
+        <span className="grow" />
+        {info.phone && <a className="btn sec sm" href={'https://wa.me/' + waNum(info.phone)} target="_blank" rel="noreferrer">💬 WhatsApp</a>}
+        <button className="btn sec sm" onClick={() => setTrack(true)}>Track order</button>
+        <button className="btn sm cartbtn" onClick={() => setShowCart(true)} aria-label="Open cart">🛒 Cart{count > 0 && <b>{count}</b>}</button>
+      </div></div>
+
+      <section className="hero"><div className="in">
+        <h1>Genuine medicines, delivered to your door</h1>
+        <p>Search from our range of medicines and health products. Pay in cash when your order arrives.</p>
+        {info.enabled && <input placeholder="Search medicines or generic names…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} aria-label="Search medicines" />}
+      </div></section>
+
+      <div className="trust">
+        <div><span>✅</span><b>Genuine products</b></div>
+        <div><span>🚚</span><b>Home delivery</b></div>
+        <div><span>💵</span><b>Cash on delivery</b></div>
+      </div>
+
       <div className="shop-w">
         {!info.enabled ? (
-          <div className="card"><h2>Our online store is currently closed</h2><p>Please visit the store in person for your medicines{info.phone && ` or contact us on ${info.phone}`}.</p></div>
+          <div className="card" style={{ marginTop: 24 }}><h2>Our online store is currently closed</h2><p>Please visit the store in person for your medicines{info.phone && ` or contact us on ${info.phone}`}.</p></div>
         ) : (
           <>
-            {info.notice && <p className="card" style={{ background: '#fff8e6' }}>{info.notice}</p>}
-            <div className="row" style={{ margin: '.8rem 0' }}>
-              <input className="grow" placeholder="Search medicines or generic names…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} aria-label="Search" />
-              <select value={catId} onChange={(e) => { setCatId(e.target.value); setPage(1); }} style={{ width: 200 }} aria-label="Category"><option value="">All categories</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+            {info.notice && <p className="card" style={{ background: '#fff8e6', marginTop: 20 }}>ℹ️ {info.notice}</p>}
+            <div className="chips" style={{ marginTop: 16 }}>
+              <button className={catId === '' ? 'on' : ''} onClick={() => { setCatId(''); setPage(1); }}>All</button>
+              {cats.map((c) => <button key={c.id} className={String(c.id) === catId ? 'on' : ''} onClick={() => { setCatId(String(c.id)); setPage(1); }}>{c.name}</button>)}
             </div>
-            {!prods && <p className="muted">Loading…</p>}
+            {!prods && <div className="pgrid">{[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <div key={i} className="skeleton" style={{ height: 190 }} />)}</div>}
             {prods && prods.items.length === 0 && <p className="muted">No products found.</p>}
-            <div className="products">
-              {prods?.items.map((p: any) => (
-                <div key={p.id} className="prod">
-                  <b>{p.name} {p.strength}</b>
-                  <span className="muted">{p.genericName} {p.form && `· ${p.form}`} {p.packSize && `· ${p.packSize}`}</span>
-                  <span className="price">{fmt(p.sellingPrice)}</span>
-                  {p.inStock ? <button className="btn sm" onClick={() => add(p)}>Add to cart</button> : <span className="tag red">Out of stock</span>}
-                </div>
-              ))}
+            <div className="pgrid">
+              {prods?.items.map((p: any) => {
+                const inCart = cart[p.id]?.qty || 0;
+                return (
+                  <div key={p.id} className="pcard">
+                    <div className="pav" style={{ background: COLORS[(p.categoryId || p.id) % COLORS.length] }}>{String(p.name || '?').charAt(0).toUpperCase()}</div>
+                    <div className="nm">{p.name} {p.strength}</div>
+                    <div className="sub">{[p.genericName, p.form, p.packSize].filter(Boolean).join(' · ')}</div>
+                    <div className="pr">{fmt(p.sellingPrice)}</div>
+                    {!p.inStock ? <span className="tag red">Out of stock</span> : inCart === 0 ? (
+                      <button className="btn sm" onClick={() => add(p)}>Add to cart</button>
+                    ) : (
+                      <div className="stepper"><button onClick={() => dec(p)} aria-label="Remove one">−</button><span>{inCart}</span><button onClick={() => add(p)} aria-label="Add one" disabled={inCart >= p.available}>+</button></div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             {prods && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * prods.pageSize >= prods.total} onClick={() => setPage(page + 1)}>Next →</button></div>}
           </>
         )}
-        <p className="muted mt" style={{ fontSize: '.85rem' }}>This website does not provide medical advice. Use medicines as directed by your doctor or pharmacist. Prescription-only medicines are not sold online.</p>
-        <p style={{ fontSize: '.8rem' }}><a href="/staff">Staff login</a></p>
       </div>
+
+      <footer className="shop-foot"><div className="in">
+        <div><h4>{info.storeName}</h4>{info.address && <div>{info.address}</div>}{info.phone && <div>Phone: {info.phone}</div>}{info.email && <div>{info.email}</div>}</div>
+        <div><h4>Good to know</h4><div>This website does not provide medical advice. Use medicines as directed by your doctor or pharmacist. Prescription-only medicines are not sold online.</div></div>
+        <div><h4>Staff</h4><a href="/staff">Staff login</a></div>
+      </div></footer>
+
+      {count > 0 && <button className="floatcart" onClick={() => setShowCart(true)}><span>🛒 {count} item(s)</span><span>{fmt(sub)} · View cart</span></button>}
       {showCart && <Cart info={info} items={items} sub={sub} setCart={setCart} onClose={() => setShowCart(false)} onPlaced={(o: any) => { setPlaced(o); setCart({}); setShowCart(false); }} />}
       {track && <Track onClose={() => setTrack(false)} />}
       {placed && <Modal title="Order received ✔" onClose={() => setPlaced(null)}><p>Your order number: <b style={{ fontSize: '1.3rem' }}>{placed.orderNo}</b></p><p>Total (including delivery): <b>{fmt(placed.total)}</b> — Cash on Delivery.</p><p className="muted">Please save this order number and your phone number — you will need both to track your order. We will contact you shortly.</p></Modal>}
