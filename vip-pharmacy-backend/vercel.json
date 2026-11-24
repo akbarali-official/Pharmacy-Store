@@ -1,5 +1,6 @@
 {
-    "version": 2,
-    "builds": [{"src": "src/index.ts", "use": "@vercel/node"}],
-    "routes": [{"src": "/(.*)", "dest": "src/index.ts"}]
+  "version": 2,
+  "buildCommand": "npm run vercel-build",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/handler" }],
+  "functions": { "api/handler.js": { "maxDuration": 30 } }
 }

@@ -3,3 +3,5 @@ node_modules
 *.log
 backups
 _update_backup
+dist
+_update_backup

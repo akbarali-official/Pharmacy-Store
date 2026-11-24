@@ -11,7 +11,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "backup": "node scripts/backup.js"
+    "backup": "node scripts/backup.js",
+    "vercel-build": "prisma generate && (tsc -p tsconfig.build.json || true)"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
