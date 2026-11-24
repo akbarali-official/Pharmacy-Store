@@ -1,6 +1,6 @@
 import { dt, fmt } from '../ui';
 
-// 80mm thermal printer ke liye; browser print (Ctrl+P) se chalta hai
+// Designed for an 80mm thermal printer; uses the browser print dialog (Ctrl+P)
 export default function Receipt({ sale, settings }: { sale: any; settings: any }) {
   return (
     <div>

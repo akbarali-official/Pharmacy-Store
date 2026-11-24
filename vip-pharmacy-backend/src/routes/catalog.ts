@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '../db.js';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
-import { sellableStock } from '../stock.js';
+import { prisma } from '../db';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
+import { sellableStock } from '../stock';
 
 export const r = Router();
 
@@ -59,10 +59,10 @@ r.post('/medicines', auth(...GROUPS.stock), wrap(async (req: any, res: any) => {
   const b = medSchema.parse(req.body);
   if (!b.force) {
     const dup = await prisma.medicine.findFirst({ where: { name: { equals: b.name, mode: 'insensitive' }, strength: b.strength ?? null, form: b.form ?? null, active: true } });
-    if (dup) throw new HttpError(409, `Shayad yeh dawai pehle se hai: "${dup.name}". Phir bhi banani hai to "force" tick karein.`);
+    if (dup) throw new HttpError(409, `This medicine may already exist: "${dup.name}". Tick "force" to create it anyway.`);
   }
   const { force, sku, ...data } = b;
-  const m = await prisma.medicine.create({ data: { ...data, sku: sku || 'MED-' + Date.now().toString(36).toUpperCase() } as any });
+  const m = await prisma.medicine.create({ data: { ...data, sku: sku || 'MED-' + Date.now().toString(36).toUpperCase() } });
   await audit(req, 'CREATE', 'Medicine', m.id, { name: m.name });
   res.json(m);
 }));
@@ -71,7 +71,7 @@ r.patch('/medicines/:id', auth(...GROUPS.stock), wrap(async (req: any, res: any)
   const id = Number(req.params.id);
   const { force, sku, ...data } = medSchema.partial().parse(req.body);
   const old = await prisma.medicine.findUnique({ where: { id } });
-  if (!old) throw new HttpError(404, 'Dawai nahi mili');
+  if (!old) throw new HttpError(404, 'Medicine not found');
   const m = await prisma.medicine.update({ where: { id }, data });
   await audit(req, 'UPDATE', 'Medicine', id, { sellingPrice: [String(old.sellingPrice), String(m.sellingPrice)], purchasePrice: [String(old.purchasePrice), String(m.purchasePrice)], active: m.active });
   res.json(m);

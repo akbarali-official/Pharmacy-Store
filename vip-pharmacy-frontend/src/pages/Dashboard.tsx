@@ -8,23 +8,23 @@ export default function Dashboard() {
   const max = Math.max(1, ...(d?.trend || []).map((t: any) => t.total));
   return (
     <>
-      <div className="top"><h1>Dashboard</h1><span className="muted">Hello, {user.name}</span></div>
+      <div className="top"><h1>Dashboard</h1><span className="muted">Welcome, {user.name}</span></div>
       <State loading={loading} error={error} />
       {d && (
         <>
           <div className="stats">
-            <div className="card stat"><b>{fmt(d.todaySales)}</b><span>Aaj ki sale ({d.todayInvoices} bills)</span></div>
-            <div className="card stat"><b>{fmt(d.todayNet)}</b><span>Today's Net (After Refund)</span></div>
-            <div className={'card stat' + (d.lowStock ? ' warn' : '')}><b>{d.lowStock}</b><span>Low-Stock Medicines</span></div>
-            <div className={'card stat' + (d.outOfStock ? ' bad' : '')}><b>{d.outOfStock}</b><span>Out of Stock</span></div>
-            <div className={'card stat' + (d.nearExpiry ? ' warn' : '')}><b>{d.nearExpiry}</b><span>Near-Expiry Batches</span></div>
-            <div className={'card stat' + (d.expired ? ' bad' : '')}><b>{d.expired}</b><span>Expired(Not for Sale)</span></div>
-            <div className={'card stat' + (d.pendingOrders ? ' warn' : '')}><b>{d.pendingOrders}</b><span>New Online Orders</span></div>
+            <div className="card stat"><b>{fmt(d.todaySales)}</b><span>Sales today ({d.todayInvoices} bills)</span></div>
+            <div className="card stat"><b>{fmt(d.todayNet)}</b><span>Net today (after refunds)</span></div>
+            <div className={'card stat' + (d.lowStock ? ' warn' : '')}><b>{d.lowStock}</b><span>Low-stock medicines</span></div>
+            <div className={'card stat' + (d.outOfStock ? ' bad' : '')}><b>{d.outOfStock}</b><span>Out of stock</span></div>
+            <div className={'card stat' + (d.nearExpiry ? ' warn' : '')}><b>{d.nearExpiry}</b><span>Batches expiring soon</span></div>
+            <div className={'card stat' + (d.expired ? ' bad' : '')}><b>{d.expired}</b><span>Expired (blocked from sale)</span></div>
+            <div className={'card stat' + (d.pendingOrders ? ' warn' : '')}><b>{d.pendingOrders}</b><span>New online orders</span></div>
           </div>
           <div className="pos">
             <div className="card">
-              <h2>Sales in the Last 7 Day</h2>
-              {d.trend.length === 0 && <p className="muted">No Sales Yet.</p>}
+              <h2>Sales — last 7 days</h2>
+              {d.trend.length === 0 && <p className="muted">No sales yet.</p>}
               {d.trend.map((t: any) => (
                 <div key={t.day} className="row" style={{ marginBottom: 4 }}>
                   <span style={{ width: 90 }}>{t.day}</span>
@@ -32,13 +32,13 @@ export default function Dashboard() {
                   <span>{fmt(t.total)}</span>
                 </div>
               ))}
-              <h2 className="mt">Top-Selling (7 Days)</h2>
-              {d.top.length === 0 && <p className="muted">No Data Available.</p>}
+              <h2 className="mt">Top sellers (7 days)</h2>
+              {d.top.length === 0 && <p className="muted">No data.</p>}
               {d.top.map((t: any) => <div key={t.name} className="row"><span className="grow">{t.name}</span><b>{t.qty}</b></div>)}
             </div>
             <div className="card">
-              <h2>Recent Sales</h2>
-              {d.recent.length === 0 && <p className="muted">No Recent Sales.</p>}
+              <h2>Recent sales</h2>
+              {d.recent.length === 0 && <p className="muted">No sales yet.</p>}
               {d.recent.map((s: any) => <div key={s.id} className="row"><span className="grow">{s.invoiceNo} <span className="muted">{dt(s.createdAt)}</span></span><b>{fmt(s.total)}</b></div>)}
             </div>
           </div>

@@ -12,20 +12,20 @@ export async function api(path: string, opt: { method?: string; body?: any } = {
       body: opt.body !== undefined ? JSON.stringify(opt.body) : undefined,
     });
   } catch {
-    throw new Error('Unable to connect to the server. Please make sure the backend is running?');
+    throw new Error('Cannot reach the server. Is the backend running?');
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && token && !path.startsWith('/auth/')) {
     setToken(null);
     location.href = '/staff';
   }
-  if (!res.ok) throw new Error(data.error || 'Request Failed');
+  if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
 export async function download(path: string, filename: string) {
   const res = await fetch(BASE + path, { headers: { Authorization: 'Bearer ' + getToken() } });
-  if (!res.ok) throw new Error('Download Failed');
+  if (!res.ok) throw new Error('Download failed');
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();

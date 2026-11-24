@@ -41,7 +41,7 @@ export function useLoad<T = any>(fn: () => Promise<T>, deps: any[] = []) {
 }
 
 export const State = ({ loading, error }: { loading?: boolean; error?: string }) =>
-  loading ? <p className="muted">Load ho raha hai…</p> : error ? <p className="err">{error}</p> : null;
+  loading ? <p className="muted">Loading…</p> : error ? <p className="err">{error}</p> : null;
 
 export async function run<T>(fn: () => Promise<T>, okMsg?: string): Promise<T | undefined> {
   try { const r = await fn(); if (okMsg) toast(okMsg); return r; }

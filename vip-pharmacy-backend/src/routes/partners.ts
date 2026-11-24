@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, D } from '../db.js';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
+import { prisma, D } from '../db';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
 
 export const r = Router();
 
@@ -16,7 +16,7 @@ r.get('/suppliers', auth(...GROUPS.buy, 'ACCOUNTANT'), wrap(async (req: any, res
 }));
 r.post('/suppliers', auth(...GROUPS.buy), wrap(async (req: any, res: any) => {
   const b = supSchema.parse(req.body);
-  const s = await prisma.supplier.create({ data: { ...b, email: b.email || null } as any });
+  const s = await prisma.supplier.create({ data: { ...b, email: b.email || null } });
   await audit(req, 'CREATE', 'Supplier', s.id);
   res.json(s);
 }));
@@ -36,7 +36,7 @@ r.get('/customers', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any, re
 }));
 r.post('/customers', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = custSchema.parse(req.body);
-  res.json(await prisma.customer.create({ data: { ...b, email: b.email || null } as any}));
+  res.json(await prisma.customer.create({ data: { ...b, email: b.email || null } }));
 }));
 r.patch('/customers/:id', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = custSchema.partial().parse(req.body);
@@ -63,7 +63,7 @@ r.post('/purchases', auth(...GROUPS.buy), wrap(async (req: any, res: any) => {
     items: z.array(z.object({ medicineId: z.number().int(), batchNo: z.string().min(1).max(40), expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), qty: z.number().int().positive(), costPrice: z.number().min(0) })).min(1),
   }).parse(req.body);
   let total = b.items.reduce((s, i) => s.add(D(i.costPrice).mul(i.qty)), D(0)).sub(D(b.discount));
-  if (total.lt(0)) throw new HttpError(422, 'Discount total se zyada hai');
+  if (total.lt(0)) throw new HttpError(422, 'Discount is more than the total');
   const p = await prisma.purchase.create({
     data: {
       supplierId: b.supplierId, branchId: req.user.branchId, createdById: req.user.id, invoiceNo: b.invoiceNo, discount: D(b.discount), total: total.toDecimalPlaces(2), note: b.note,
@@ -74,12 +74,12 @@ r.post('/purchases', auth(...GROUPS.buy), wrap(async (req: any, res: any) => {
   res.json(p);
 }));
 
-// Maal wasool: batches banti/barhti hain + stock movements
+// Receive goods: creates/increases batches and records stock movements
 r.post('/purchases/:id/receive', auth(...GROUPS.buy), wrap(async (req: any, res: any) => {
   const id = Number(req.params.id);
   await prisma.$transaction(async (tx) => {
-    const flip = await tx.purchase.updateMany({ where: { id, branchId: req.user.branchId, status: 'DRAFT' }, data: { status: 'RECEIVED' } }); // double-receive se bachao
-    if (flip.count === 0) throw new HttpError(409, 'Yeh purchase draft nahi hai (pehle receive ho chuki ya cancel)');
+    const flip = await tx.purchase.updateMany({ where: { id, branchId: req.user.branchId, status: 'DRAFT' }, data: { status: 'RECEIVED' } }); // prevents receiving the same purchase twice
+    if (flip.count === 0) throw new HttpError(409, 'This purchase is not a draft (already received or cancelled)');
     const p = await tx.purchase.findUnique({ where: { id }, include: { items: true } });
     for (const i of p!.items) {
       const exist = await tx.batch.findUnique({ where: { medicineId_branchId_batchNo: { medicineId: i.medicineId, branchId: p!.branchId, batchNo: i.batchNo } } });
@@ -97,7 +97,7 @@ r.post('/purchases/:id/receive', auth(...GROUPS.buy), wrap(async (req: any, res:
 r.post('/purchases/:id/cancel', auth(...GROUPS.buy), wrap(async (req: any, res: any) => {
   const id = Number(req.params.id);
   const x = await prisma.purchase.updateMany({ where: { id, branchId: req.user.branchId, status: 'DRAFT' }, data: { status: 'CANCELLED' } });
-  if (!x.count) throw new HttpError(409, 'Sirf draft purchase cancel ho sakti hai');
+  if (!x.count) throw new HttpError(409, 'Only draft purchases can be cancelled');
   await audit(req, 'CANCEL', 'Purchase', id);
   res.json({ ok: true });
 }));

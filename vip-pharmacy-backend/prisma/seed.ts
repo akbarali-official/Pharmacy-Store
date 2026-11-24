@@ -1,4 +1,4 @@
-// DEMO DATA — sirf test ke liye. Asli dukaan par chalane se pehle demo dawaiyan archive/delete kar dein.
+// DEMO DATA — for testing only. Archive or delete the demo medicines before using this in a real store.
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -36,7 +36,7 @@ async function main() {
       update: {},
       create: { name, genericName: generic || null, strength: strength || null, form, sku, categoryId: cats[cat], purchasePrice: cost, sellingPrice: price, requiresPrescription: rx, showOnline: online, reorderLevel: 20, storageNotes: 'DEMO DATA' },
     });
-    // Do batches: ek aam, ek jald expire hone wali (FEFO test ke liye)
+    // Two batches: one normal, one expiring soon (for FEFO testing)
     for (const [suffix, days, qty] of [['A', 400, 120], ['B', i % 4 === 0 ? 30 : 200, 40]] as const) {
       const batchNo = `D${i}${suffix}`;
       const exists = await prisma.batch.findUnique({ where: { medicineId_branchId_batchNo: { medicineId: med.id, branchId: branch.id, batchNo } } });
@@ -45,6 +45,6 @@ async function main() {
       await prisma.stockMovement.create({ data: { batchId: b.id, medicineId: med.id, branchId: branch.id, type: 'ADJUST_IN', qty, reason: 'DEMO opening stock' } });
     }
   }
-  console.log('Demo data tayyar. (Admin user "Setup" screen se banega, yahan nahi.)');
+  console.log('Demo data is ready. (The admin user is created from the Setup screen, not here.)');
 }
 main().finally(() => prisma.$disconnect());

@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, D } from '../db.js';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
-import { todayDate, takeFromBatch, validBatchWhere } from '../stock.js';
-import { getSettings } from './settings.js';
+import { prisma, D } from '../db';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
+import { todayDate, takeFromBatch, validBatchWhere } from '../stock';
+import { getSettings } from './settings';
 
 export const r = Router();
 
@@ -45,7 +45,7 @@ r.get('/inventory/alerts', auth(...GROUPS.all), wrap(async (req: any, res: any) 
   });
 }));
 
-// Opening stock / manual stock-in (purchase ke baghair)
+// Opening stock / manual stock-in (without a purchase)
 r.post('/inventory/batches', auth(...GROUPS.stock), wrap(async (req: any, res: any) => {
   const b = z.object({ medicineId: z.number().int(), batchNo: z.string().min(1).max(40), expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), qty: z.number().int().positive(), costPrice: z.number().min(0), reason: z.string().max(200).default('Opening stock') }).parse(req.body);
   const branchId = req.user.branchId;
@@ -61,12 +61,12 @@ r.post('/inventory/batches', auth(...GROUPS.stock), wrap(async (req: any, res: a
   res.json(batch);
 }));
 
-// Adjustment: reason lazmi, minus mein stock negative nahi ho sakta
+// Adjustment: a reason is required and stock cannot go negative
 r.post('/inventory/adjust', auth(...GROUPS.stock), wrap(async (req: any, res: any) => {
-  const b = z.object({ batchId: z.number().int(), delta: z.number().int().refine((n) => n !== 0, 'delta 0 nahi ho sakta'), reason: z.string().min(3).max(200) }).parse(req.body);
+  const b = z.object({ batchId: z.number().int(), delta: z.number().int().refine((n) => n !== 0, 'delta cannot be 0'), reason: z.string().min(3).max(200) }).parse(req.body);
   await prisma.$transaction(async (tx) => {
     const batch = await tx.batch.findFirst({ where: { id: b.batchId, branchId: req.user.branchId } });
-    if (!batch) throw new HttpError(404, 'Batch nahi mili');
+    if (!batch) throw new HttpError(404, 'Batch not found');
     if (b.delta < 0) await takeFromBatch(tx, batch.id, -b.delta);
     else await tx.batch.update({ where: { id: batch.id }, data: { availableQty: { increment: b.delta } } });
     await tx.stockMovement.create({ data: { batchId: batch.id, medicineId: batch.medicineId, branchId: batch.branchId, type: b.delta > 0 ? 'ADJUST_IN' : 'ADJUST_OUT', qty: b.delta, reason: b.reason, userId: req.user.id } });
@@ -79,7 +79,7 @@ r.patch('/inventory/batches/:id', auth(...GROUPS.stock), wrap(async (req: any, r
   const b = z.object({ status: z.enum(['ACTIVE', 'QUARANTINE']) }).parse(req.body);
   const id = Number(req.params.id);
   const row = await prisma.batch.updateMany({ where: { id, branchId: req.user.branchId }, data: { status: b.status } });
-  if (!row.count) throw new HttpError(404, 'Batch nahi mili');
+  if (!row.count) throw new HttpError(404, 'Batch not found');
   await audit(req, 'BATCH_STATUS', 'Batch', id, b);
   res.json({ ok: true });
 }));
@@ -95,7 +95,7 @@ r.get('/inventory/movements', auth(...GROUPS.stock, 'ACCOUNTANT'), wrap(async (r
   res.json({ total, page, pageSize, items });
 }));
 
-// Reconcile: har batch ka balance = movements ka jama? Farq ho to dikhao
+// Reconcile: each batch balance should equal the sum of its movements; report any mismatch
 r.get('/inventory/reconcile', auth(...GROUPS.boss, 'ACCOUNTANT', 'INVENTORY'), wrap(async (req: any, res: any) => {
   const batches = await prisma.batch.findMany({ where: { branchId: req.user.branchId }, include: { medicine: { select: { name: true } } } });
   const sums = await prisma.stockMovement.groupBy({ by: ['batchId'], where: { branchId: req.user.branchId }, _sum: { qty: true } });

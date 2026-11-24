@@ -14,19 +14,19 @@ export default function Sales() {
       <div className="top"><h1>Sales & Returns</h1>
         <div className="row">
           <input type="date" value={f.from} onChange={(e) => { setF({ ...f, from: e.target.value }); setPage(1); }} aria-label="Se" style={{ width: 150 }} />
-          <input type="date" value={f.to} onChange={(e) => { setF({ ...f, to: e.target.value }); setPage(1); }} aria-label="Tak" style={{ width: 150 }} />
+          <input type="date" value={f.to} onChange={(e) => { setF({ ...f, to: e.target.value }); setPage(1); }} aria-label="To" style={{ width: 150 }} />
           <input placeholder="Invoice #" value={f.invoice} onChange={(e) => { setF({ ...f, invoice: e.target.value }); setPage(1); }} style={{ width: 150 }} />
         </div>
       </div>
       <State loading={loading} error={error} />
-      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Invoice</th><th>Waqt</th><th>Cashier</th><th className="right">Total</th><th>Payment</th><th>Return</th></tr></thead><tbody>
+      {data && <div className="scroll"><table className="tbl"><thead><tr><th>Invoice</th><th>Time</th><th>Cashier</th><th className="right">Total</th><th>Payment</th><th>Return</th></tr></thead><tbody>
         {data.items.map((s: any) => {
           const refunded = s.returns.reduce((t: number, r: any) => t + Number(r.refundAmount), 0);
           return <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setOpen(s.id)}><td><a href="#!" onClick={(e) => e.preventDefault()}>{s.invoiceNo}</a></td><td>{dt(s.createdAt)}</td><td>{s.cashier.name}</td><td className="right">{fmt(s.total)}</td><td>{s.payments.map((p: any) => p.method).join('+')}</td><td>{refunded > 0 && <span className="tag amber">{fmt(refunded)}</span>}</td></tr>;
         })}
-        {data.items.length === 0 && <tr><td colSpan={6} className="muted">No Sales Found.</td></tr>}
+        {data.items.length === 0 && <tr><td colSpan={6} className="muted">No sales found.</td></tr>}
       </tbody></table></div>}
-      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Pichla</button><span className="muted">Page {page} · open {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page} · total {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Next →</button></div>}
       {open && <SaleDetail id={open} onClose={() => setOpen(null)} onChanged={reload} />}
     </>
   );
@@ -44,14 +44,14 @@ function SaleDetail({ id, onClose, onChanged }: any) {
   const doReturn = async (e: any) => {
     e.preventDefault();
     const items = Object.entries(qty).filter(([, v]) => Number(v) > 0).map(([k, v]) => ({ saleItemId: Number(k), qty: Number(v) }));
-    if (!items.length) return run(() => Promise.reject(new Error('Enter the Quantity to Be Returned')));
-    if (await run(() => api(`/sales/${id}/return`, { method: 'POST', body: { items, refundMethod: method, restock, reason } }), 'Return/refund recorded')) { setQty({}); setReason(''); reload(); onChanged(); }
+    if (!items.length) return run(() => Promise.reject(new Error('Enter the quantity to return')));
+    if (await run(() => api(`/sales/${id}/return`, { method: 'POST', body: { items, refundMethod: method, restock, reason } }), 'Return recorded')) { setQty({}); setReason(''); reload(); onChanged(); }
   };
 
   return (
     <Modal title={sale ? sale.invoiceNo : 'Sale'} onClose={onClose} wide>
       <State loading={loading} error={error} />
-      {sale && view === 'receipt' && <><Receipt sale={sale} settings={settings} /><button className="btn sec mt" onClick={() => setView('detail')}>← Wapas</button></>}
+      {sale && view === 'receipt' && <><Receipt sale={sale} settings={settings} /><button className="btn sec mt" onClick={() => setView('detail')}>← Back</button></>}
       {sale && view === 'detail' && (
         <>
           <div className="row"><span className="grow muted">{dt(sale.createdAt)} · {sale.cashier.name}</span><button className="btn sec sm" onClick={() => setView('receipt')}>Receipt / Reprint</button></div>
@@ -64,15 +64,15 @@ function SaleDetail({ id, onClose, onChanged }: any) {
             })}
           </tbody></table>
           <p className="right">Subtotal {fmt(sale.subtotal)} · Discount {fmt(sale.discount)} · <b>Total {fmt(sale.total)}</b></p>
-          {sale.returns.length > 0 && <p className="muted">Previous Returns: {sale.returns.map((r: any) => fmt(r.refundAmount)).join(', ')}</p>}
+          {sale.returns.length > 0 && <p className="muted">Previous returns: {sale.returns.map((r: any) => fmt(r.refundAmount)).join(', ')}</p>}
           <form onSubmit={doReturn} className="card mt">
             <h3>Return / Refund</h3>
             <div className="grid2">
               <Field label="Refund method"><select value={method} onChange={(e) => setMethod(e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="BANK">Bank</option><option value="OTHER">Other</option></select></Field>
               <Field label="Reason *"><input value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} /></Field>
             </div>
-            <label className="row"><input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Add Returned Stock to Inventory (Only sealed and undamaged medicines.  Expired medicines will not be added automatically).</label>
-            <button className="btn mt">Record Return</button>
+            <label className="row"><input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Return items to stock (sealed / in good condition; expired items are never restocked)</label>
+            <button className="btn mt">Record return</button>
           </form>
         </>
       )}

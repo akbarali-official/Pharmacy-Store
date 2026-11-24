@@ -3,22 +3,22 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { prisma } from '../db.js';
-import { config } from '../config.js';
-import { wrap, HttpError, auth, GROUPS, audit } from '../middleware.js';
-import { setSettings } from './settings.js';
+import { prisma } from '../db';
+import { config } from '../config';
+import { wrap, HttpError, auth, GROUPS, audit } from '../middleware';
+import { setSettings } from './settings';
 
 export const r = Router();
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false, message: { error: 'Too Many Attempts. Please try again after 15 minutes.' } });
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many attempts, please try again in 15 minutes' } });
 const sign = (u: any) => jwt.sign({ uid: u.id }, config.jwtSecret, { expiresIn: '12h' });
 const safe = (u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role, branchId: u.branchId, active: u.active, lastLoginAt: u.lastLoginAt });
 const ROLES = ['OWNER', 'MANAGER', 'PHARMACIST', 'CASHIER', 'INVENTORY', 'ACCOUNTANT'] as const;
 
 r.get('/auth/status', wrap(async (_q: any, res: any) => res.json({ needsSetup: (await prisma.user.count()) === 0 })));
 
-// Pehli dafa owner banane ka raasta (sirf jab koi user na ho)
+// First-run owner creation (only allowed while there are no users)
 r.post('/auth/setup', limiter, wrap(async (req: any, res: any) => {
-  if ((await prisma.user.count()) > 0) throw new HttpError(403, 'Setup has already been completed.');
+  if ((await prisma.user.count()) > 0) throw new HttpError(403, 'Setup has already been completed');
   const b = z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(8), storeName: z.string().min(2) }).parse(req.body);
   let branch = await prisma.branch.findFirst();
   if (!branch) branch = await prisma.branch.create({ data: { name: 'Main Branch' } });
@@ -34,7 +34,7 @@ r.post('/auth/login', limiter, wrap(async (req: any, res: any) => {
   const ok = u && u.active && (await bcrypt.compare(b.password, u.passwordHash));
   if (!ok) {
     await prisma.auditLog.create({ data: { action: 'LOGIN_FAIL', entity: 'User', meta: { email: b.email.toLowerCase() } } }).catch(() => {});
-    throw new HttpError(401, 'Invalid email or password.');
+    throw new HttpError(401, 'Incorrect email or password');
   }
   await prisma.user.update({ where: { id: u!.id }, data: { lastLoginAt: new Date() } });
   res.json({ token: sign(u), user: safe(u) });
@@ -44,7 +44,7 @@ r.get('/auth/me', auth(), wrap(async (req: any, res: any) => res.json(safe(req.u
 
 r.post('/auth/change-password', auth(), wrap(async (req: any, res: any) => {
   const b = z.object({ oldPassword: z.string(), newPassword: z.string().min(8) }).parse(req.body);
-  if (!(await bcrypt.compare(b.oldPassword, req.user.passwordHash))) throw new HttpError(400, 'Incorrect Current Password.');
+  if (!(await bcrypt.compare(b.oldPassword, req.user.passwordHash))) throw new HttpError(400, 'Current password is incorrect');
   await prisma.user.update({ where: { id: req.user.id }, data: { passwordHash: await bcrypt.hash(b.newPassword, 12) } });
   await audit(req, 'CHANGE_PASSWORD', 'User', req.user.id);
   res.json({ ok: true });
@@ -63,7 +63,7 @@ r.post('/users', auth(...GROUPS.owner), wrap(async (req: any, res: any) => {
 r.patch('/users/:id', auth(...GROUPS.owner), wrap(async (req: any, res: any) => {
   const id = Number(req.params.id);
   const b = z.object({ name: z.string().min(2).optional(), role: z.enum(ROLES).optional(), active: z.boolean().optional(), password: z.string().min(8).optional() }).parse(req.body);
-  if (id === req.user.id && (b.active === false || (b.role && b.role !== 'OWNER'))) throw new HttpError(400, 'You cannot disable or deactivate your own owner account.');
+  if (id === req.user.id && (b.active === false || (b.role && b.role !== 'OWNER'))) throw new HttpError(400, 'You cannot disable or demote your own owner account');
   const data: any = { name: b.name, role: b.role, active: b.active };
   if (b.password) data.passwordHash = await bcrypt.hash(b.password, 12);
   const u = await prisma.user.update({ where: { id }, data });

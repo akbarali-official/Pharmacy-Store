@@ -13,6 +13,7 @@ import Sales from './pages/Sales';
 import Customers from './pages/Customers';
 import Finance from './pages/Finance';
 import Reports from './pages/Reports';
+import Tools from './pages/Tools';
 import Orders from './pages/Orders';
 import Admin from './pages/Admin';
 import Shop from './pages/Shop';
@@ -34,6 +35,7 @@ const NAV: [string, string, string[]][] = [
   ['/staff/orders', 'Online Orders', SELL],
   ['/staff/finance', 'Cash & Expenses', [...SELL, 'ACCOUNTANT']],
   ['/staff/reports', 'Reports', MONEY],
+  ['/staff/tools', 'Business Tools', ['OWNER', 'MANAGER', 'PHARMACIST', 'INVENTORY', 'ACCOUNTANT']],
   ['/staff/admin', 'Staff & Settings', ['OWNER', 'MANAGER']],
 ];
 
@@ -50,11 +52,11 @@ function Staff() {
   };
   useEffect(() => { boot(); }, []);
 
-  if (!ready) return <p className="muted" style={{ padding: 20 }}>Load ho raha hai…</p>;
+  if (!ready) return <p className="muted" style={{ padding: 20 }}>Loading…</p>;
   if (!user) return <Login onLogin={async (t: string, u: any) => { setToken(t); setUser(u); await refreshSettings(); }} />;
 
   const logout = () => { setToken(null); setUser(null); };
-  const guard = (roles: string[], el: JSX.Element) => (can(user, roles) ? el : <p className="err">Access Denied.</p>);
+  const guard = (roles: string[], el: JSX.Element) => (can(user, roles) ? el : <p className="err">You do not have permission to view this page.</p>);
 
   return (
     <AuthCtx.Provider value={{ user, settings, logout, refreshSettings }}>
@@ -81,6 +83,7 @@ function Staff() {
             <Route path="orders" element={guard(SELL, <Orders />)} />
             <Route path="finance" element={guard([...SELL, 'ACCOUNTANT'], <Finance />)} />
             <Route path="reports" element={guard(MONEY, <Reports />)} />
+            <Route path="tools" element={guard(['OWNER', 'MANAGER', 'PHARMACIST', 'INVENTORY', 'ACCOUNTANT'], <Tools />)} />
             <Route path="admin" element={guard(['OWNER', 'MANAGER'], <Admin />)} />
             <Route path="*" element={<Navigate to="/staff" />} />
           </Routes>

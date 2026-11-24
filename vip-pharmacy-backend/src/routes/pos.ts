@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, D } from '../db.js';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
-import { allocateFefo, takeFromBatch, nextNumber, todayDate } from '../stock.js';
-import { getSettings } from './settings.js';
+import { prisma, D } from '../db';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
+import { allocateFefo, takeFromBatch, nextNumber, todayDate } from '../stock';
+import { getSettings } from './settings';
 
 export const r = Router();
 const METHOD = z.enum(['CASH', 'CARD', 'BANK', 'OTHER']);
@@ -25,9 +25,9 @@ r.post('/pos/checkout', auth(...GROUPS.sell), wrap(async (req: any, res: any) =>
 
   const saleId = await prisma.$transaction(async (tx) => {
     const meds = await tx.medicine.findMany({ where: { id: { in: [...merged.keys()] }, active: true } });
-    if (meds.length !== merged.size) throw new HttpError(400, 'Koi dawai mojood nahi ya inactive hai');
+    if (meds.length !== merged.size) throw new HttpError(400, 'A medicine is missing or inactive');
     if (meds.some((m) => m.requiresPrescription) && !b.prescriptionVerified)
-      throw new HttpError(422, 'This medicine requires a prescription. Please verify and approve the prescription first.');
+      throw new HttpError(422, 'A prescription medicine is in the cart: check the prescription and tick the confirmation first');
 
     const lines: any[] = [];
     let subtotal = D(0);
@@ -41,16 +41,16 @@ r.post('/pos/checkout', auth(...GROUPS.sell), wrap(async (req: any, res: any) =>
       }
     }
     const discount = D(b.discount).toDecimalPlaces(2);
-    if (discount.gt(subtotal)) throw new HttpError(422, 'Discount cannot exceed the total bill amount.');
+    if (discount.gt(subtotal)) throw new HttpError(422, 'Discount cannot exceed the bill total');
     const total = subtotal.sub(discount).toDecimalPlaces(2);
 
     const paid = b.payments.reduce((s, p) => s.add(D(p.amount)), D(0));
-    if (paid.lt(total)) throw new HttpError(422, 'Payment is incomplete.');
+    if (paid.lt(total)) throw new HttpError(422, 'Payment is incomplete');
     const change = paid.sub(total);
     const pays = b.payments.map((p) => ({ method: p.method, amount: D(p.amount) }));
     if (change.gt(0)) {
       const cash = pays.find((p) => p.method === 'CASH' && p.amount.gte(change));
-      if (!cash) throw new HttpError(422, 'Overpayments can only be refunded in cash.');
+      if (!cash) throw new HttpError(422, 'Overpayment can only be returned as cash');
       cash.amount = cash.amount.sub(change);
     }
 
@@ -113,8 +113,8 @@ r.get('/sales', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any, res: a
 
 r.get('/sales/:id', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any, res: any) => {
   const sale = await loadSale(Number(req.params.id));
-  if (!sale || sale.branchId !== req.user.branchId) throw new HttpError(404, 'Sale nahi mili');
-  if (req.user.role === 'CASHIER' && sale.cashierId !== req.user.id) throw new HttpError(403, 'This bill does not belong to you.');
+  if (!sale || sale.branchId !== req.user.branchId) throw new HttpError(404, 'Sale not found');
+  if (req.user.role === 'CASHIER' && sale.cashierId !== req.user.id) throw new HttpError(403, 'This bill does not belong to you');
   res.json(sale);
 }));
 
@@ -131,22 +131,22 @@ r.post('/sales/:id/return', auth(...GROUPS.sell), wrap(async (req: any, res: any
 
   const ret = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findUnique({ where: { id: saleId }, include: { items: { include: { returnItems: true } } } });
-    if (!sale || sale.branchId !== req.user.branchId) throw new HttpError(404, 'Sale nahi mili');
-    const factor = sale.subtotal.gt(0) ? sale.total.div(sale.subtotal) : D(1); // bill discount ka hissa
+    if (!sale || sale.branchId !== req.user.branchId) throw new HttpError(404, 'Sale not found');
+    const factor = sale.subtotal.gt(0) ? sale.total.div(sale.subtotal) : D(1); // proportional share of the bill discount
     let refund = D(0);
     const rows: any[] = [];
     for (const it of b.items) {
       const si = sale.items.find((x) => x.id === it.saleItemId);
-      if (!si) throw new HttpError(400, 'Item is bill ka nahi');
+      if (!si) throw new HttpError(400, 'Item does not belong to this bill');
       const already = si.returnItems.reduce((s, x) => s + x.qty, 0);
-      if (it.qty > si.qty - already) throw new HttpError(422, `${si.nameSnap}: sirf ${si.qty - already} wapas ho sakti hai`);
+      if (it.qty > si.qty - already) throw new HttpError(422, `${si.nameSnap}: only ${si.qty - already} can be returned`);
       const amount = si.unitPrice.mul(it.qty).mul(factor).toDecimalPlaces(2);
       refund = refund.add(amount);
       const expired = si.expirySnap < todayDate();
       rows.push({ si, qty: it.qty, amount, restock: b.restock && !expired });
     }
     if (req.user.role === 'CASHIER' && refund.gt(D(settings.returnApprovalLimit)))
-      throw new HttpError(403, `Rs ${settings.returnApprovalLimit} se zyada refund ke liye manager chahiye`);
+      throw new HttpError(403, `Refunds above Rs ${settings.returnApprovalLimit} need a manager`);
     const session = await tx.cashSession.findFirst({ where: { userId: req.user.id, status: 'OPEN' } });
     const created = await tx.saleReturn.create({
       data: {

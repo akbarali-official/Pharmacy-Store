@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { Prisma } from '@prisma/client';
-import { prisma } from '../db.js';
-import { auth, GROUPS, wrap } from '../middleware.js';
-import { todayDate, validBatchWhere } from '../stock.js';
-import { getSettings } from './settings.js';
+import { prisma } from '../db';
+import { auth, GROUPS, wrap } from '../middleware';
+import { todayDate, validBatchWhere } from '../stock';
+import { getSettings } from './settings';
 
 export const r = Router();
 const num = (v: any) => Number(v ?? 0);
@@ -15,7 +15,7 @@ function range(q: any) {
   return { from, to };
 }
 
-// ---------- Dashboard (sab data database se) ----------
+// ---------- Dashboard (all data comes from the database) ----------
 r.get('/reports/dashboard', auth(...GROUPS.all), wrap(async (req: any, res: any) => {
   const branchId = req.user.branchId;
   const s = await getSettings();
@@ -71,7 +71,7 @@ async function summary(branchId: number, from: Date, to: Date) {
   const net = gross - refunded;
   return {
     from, to, invoices: sales._count, grossSales: gross, discounts: num(sales._sum.discount), refunds: refunded, netSales: net,
-    estimatedProfit: net - cost, estimatedProfitNote: 'Andaza: net sales - sale ke waqt ki cost (batch cost snapshot). Expenses alag.',
+    estimatedProfit: net - cost, estimatedProfitNote: 'Estimate: net sales minus cost at the time of sale (batch cost snapshot). Expenses are separate.',
     expenses, expensesByCategory: exp.map((e) => ({ category: e.category, amount: num(e._sum.amount) })),
     profitAfterExpenses: net - cost - expenses,
     payments: pay.map((p) => ({ method: p.method, amount: num(p._sum.amount) })),
@@ -86,7 +86,7 @@ r.get('/reports/summary', auth(...GROUPS.money), wrap(async (req: any, res: any)
   res.json(await summary(req.user.branchId, from, to));
 }));
 
-// CSV (formula-injection se bachao: = + - @ se shuru ho to aage ' laga do)
+// CSV (formula-injection protection: cells starting with = + - @ get a leading ')
 const csvCell = (v: any) => {
   let s = v == null ? '' : String(v);
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;

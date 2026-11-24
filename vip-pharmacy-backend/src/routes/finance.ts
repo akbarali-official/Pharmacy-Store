@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, D } from '../db.js';
-import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware.js';
+import { prisma, D } from '../db';
+import { auth, GROUPS, wrap, audit, HttpError, pageOf } from '../middleware';
 
 export const r = Router();
 
@@ -46,7 +46,7 @@ r.get('/cash/current', auth(...GROUPS.sell, 'ACCOUNTANT'), wrap(async (req: any,
 
 r.post('/cash/open', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = z.object({ openingCash: z.number().min(0) }).parse(req.body);
-  if (await prisma.cashSession.findFirst({ where: { userId: req.user.id, status: 'OPEN' } })) throw new HttpError(409, 'Your cash session is already open.');
+  if (await prisma.cashSession.findFirst({ where: { userId: req.user.id, status: 'OPEN' } })) throw new HttpError(409, 'You already have an open cash session');
   const s = await prisma.cashSession.create({ data: { branchId: req.user.branchId, userId: req.user.id, openingCash: D(b.openingCash) } });
   await audit(req, 'OPEN', 'CashSession', s.id, { openingCash: b.openingCash });
   res.json(s);
@@ -55,7 +55,7 @@ r.post('/cash/open', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
 r.post('/cash/close', auth(...GROUPS.sell), wrap(async (req: any, res: any) => {
   const b = z.object({ countedCash: z.number().min(0), note: z.string().max(300).optional() }).parse(req.body);
   const s = await prisma.cashSession.findFirst({ where: { userId: req.user.id, status: 'OPEN' } });
-  if (!s) throw new HttpError(404, 'Koi khula cash session nahi');
+  if (!s) throw new HttpError(404, 'There is no open cash session');
   const { expected } = await expectedCash(s);
   const closed = await prisma.cashSession.update({ where: { id: s.id }, data: { status: 'CLOSED', closedAt: new Date(), closingCash: D(b.countedCash), expectedCash: expected, variance: D(b.countedCash).sub(expected), note: b.note } });
   await audit(req, 'CLOSE', 'CashSession', s.id, { variance: String(closed.variance) });

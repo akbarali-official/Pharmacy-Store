@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '../db.js';
-import { auth, GROUPS, wrap, audit } from '../middleware.js';
+import { prisma } from '../db';
+import { auth, GROUPS, wrap, audit } from '../middleware';
 
 export const DEFAULTS: Record<string, string> = {
   storeName: 'Mashallah Medical Store',
@@ -11,13 +11,13 @@ export const DEFAULTS: Record<string, string> = {
   currency: 'Rs',
   timezone: 'Asia/Karachi',
   receiptHeader: '',
-  receiptFooter: 'Thank you! Please bring the receipt when returning medicines.',
+  receiptFooter: 'Thank you! Please bring this receipt for returns.',
   nearExpiryDays: '90',
   returnApprovalLimit: '5000',
   storeEnabled: 'false',
   deliveryFee: '150',
   minOrder: '0',
-  storeNotice: 'Prescription medicines cannot be sold online.',
+  storeNotice: 'Prescription-only medicines are not sold online.',
 };
 
 export async function getSettings() {

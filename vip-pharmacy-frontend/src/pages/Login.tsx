@@ -21,14 +21,14 @@ export default function Login({ onLogin }: { onLogin: (token: string, user: any)
   return (
     <div className="auth">
       <div className="card">
-        <h1>{needsSetup ? 'Initial Data Setup' : 'Staff Login'}</h1>
-        {needsSetup && <p className="muted">Create an Owner Account. Use a srong password (at least 8 characters) and never share it with anyone.</p>}
+        <h1>{needsSetup ? 'Pehli dafa setup' : 'Staff Login'}</h1>
+        {needsSetup && <p className="muted">Create the owner account. Use a strong password (minimum 8 characters) and do not share it.</p>}
         <form onSubmit={submit}>
-          {needsSetup && <Field label="Pharmacy Name"><input value={f.storeName} onChange={set('storeName')} required /></Field>}
-          {needsSetup && <Field label="Your Name"><input value={f.name} onChange={set('name')} required /></Field>}
+          {needsSetup && <Field label="Store name"><input value={f.storeName} onChange={set('storeName')} required /></Field>}
+          {needsSetup && <Field label="Your name"><input value={f.name} onChange={set('name')} required /></Field>}
           <Field label="Email"><input type="email" value={f.email} onChange={set('email')} required autoComplete="username" /></Field>
           <Field label="Password"><input type="password" value={f.password} onChange={set('password')} required minLength={needsSetup ? 8 : 1} autoComplete={needsSetup ? 'new-password' : 'current-password'} /></Field>
-          <button className="btn" disabled={busy} style={{ width: '100%' }}>{needsSetup ? 'Create Owner Account' : 'Login'}</button>
+          <button className="btn" disabled={busy} style={{ width: '100%' }}>{needsSetup ? 'Create owner account' : 'Login'}</button>
         </form>
       </div>
     </div>

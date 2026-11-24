@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { api, qs } from '../api';
 import { fmt, Modal, toast, run, Field } from '../ui';
 
-// Customers ke liye public online store (bina login). Payment: Cash on Delivery.
+// Public online store for customers (no login). Payment: Cash on Delivery.
+// Converts a Pakistani phone number to WhatsApp format (92...)
+const waNum = (p: string) => { let d = (p || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '92' + d.slice(1); return d; };
+
 export default function Shop() {
   const [info, setInfo] = useState<any>(null);
   const [err, setErr] = useState('');
@@ -11,12 +14,14 @@ export default function Shop() {
   const [cats, setCats] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [prods, setProds] = useState<any>(null);
-  const [cart, setCart] = useState<Record<number, { p: any; qty: number }>>({});
+  const [cart, setCart] = useState<Record<number, { p: any; qty: number }>>(() => { try { return JSON.parse(localStorage.getItem('vip_shop_cart') || '{}'); } catch { return {}; } });
+  useEffect(() => { try { localStorage.setItem('vip_shop_cart', JSON.stringify(cart)); } catch { /* ignore */ } }, [cart]);
   const [showCart, setShowCart] = useState(false);
   const [track, setTrack] = useState(false);
   const [placed, setPlaced] = useState<any>(null);
 
   useEffect(() => { api('/store/info').then(setInfo).catch((e) => setErr(e.message)); api('/categories').then(setCats).catch(() => {}); }, []);
+  useEffect(() => { if (info?.storeName) document.title = info.storeName + ' — Online Pharmacy'; }, [info]);
   useEffect(() => {
     if (!info?.enabled) return;
     const t = setTimeout(() => api('/store/products?' + qs({ q, categoryId: catId, page })).then(setProds).catch((e) => setErr(e.message)), 200);
@@ -36,41 +41,42 @@ export default function Shop() {
       <header className="shop-h">
         <div className="shop-w row" style={{ padding: 0 }}>
           <div className="grow"><b style={{ fontSize: '1.3rem' }}>{info.storeName}</b><div style={{ opacity: .85, fontSize: '.9rem' }}>{info.address} {info.phone && `· ${info.phone}`}</div></div>
-          <button className="btn sec sm" onClick={() => setTrack(true)}>Track Order</button>
+          {info.phone && <a className="btn sec sm" href={'https://wa.me/' + waNum(info.phone)} target="_blank" rel="noreferrer">Ask on WhatsApp</a>}
+          <button className="btn sec sm" onClick={() => setTrack(true)}>Track order</button>
           <button className="btn sm" style={{ background: '#fff', color: 'var(--green-d)' }} onClick={() => setShowCart(true)}>Cart ({count})</button>
         </div>
       </header>
       <div className="shop-w">
         {!info.enabled ? (
-          <div className="card"><h2>Online Store Currently Unavailable</h2><p>Please visit our pharmacy in person for your medicines.{info.phone && ` You can also call at ${info.phone}`}.</p></div>
+          <div className="card"><h2>Our online store is currently closed</h2><p>Please visit the store in person for your medicines{info.phone && ` or contact us on ${info.phone}`}.</p></div>
         ) : (
           <>
             {info.notice && <p className="card" style={{ background: '#fff8e6' }}>{info.notice}</p>}
             <div className="row" style={{ margin: '.8rem 0' }}>
-              <input className="grow" placeholder="Search by Medicine or Generic Name…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} aria-label="Search" />
+              <input className="grow" placeholder="Search medicines or generic names…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} aria-label="Search" />
               <select value={catId} onChange={(e) => { setCatId(e.target.value); setPage(1); }} style={{ width: 200 }} aria-label="Category"><option value="">All categories</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
             </div>
             {!prods && <p className="muted">Loading…</p>}
-            {prods && prods.items.length === 0 && <p className="muted">Nothing Found.</p>}
+            {prods && prods.items.length === 0 && <p className="muted">No products found.</p>}
             <div className="products">
               {prods?.items.map((p: any) => (
                 <div key={p.id} className="prod">
                   <b>{p.name} {p.strength}</b>
                   <span className="muted">{p.genericName} {p.form && `· ${p.form}`} {p.packSize && `· ${p.packSize}`}</span>
                   <span className="price">{fmt(p.sellingPrice)}</span>
-                  {p.inStock ? <button className="btn sm" onClick={() => add(p)}>Cart mein dalein</button> : <span className="tag red">Out of Stock</span>}
+                  {p.inStock ? <button className="btn sm" onClick={() => add(p)}>Add to cart</button> : <span className="tag red">Out of stock</span>}
                 </div>
               ))}
             </div>
-            {prods && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * prods.pageSize >= prods.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+            {prods && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page}</span><button className="btn sec sm" disabled={page * prods.pageSize >= prods.total} onClick={() => setPage(page + 1)}>Next →</button></div>}
           </>
         )}
-        <p className="muted mt" style={{ fontSize: '.85rem' }}>This website does not provide medical advice. Use as directed by your doctor or pharmacist. Prescription medicines are not sold online.</p>
+        <p className="muted mt" style={{ fontSize: '.85rem' }}>This website does not provide medical advice. Use medicines as directed by your doctor or pharmacist. Prescription-only medicines are not sold online.</p>
         <p style={{ fontSize: '.8rem' }}><a href="/staff">Staff login</a></p>
       </div>
       {showCart && <Cart info={info} items={items} sub={sub} setCart={setCart} onClose={() => setShowCart(false)} onPlaced={(o: any) => { setPlaced(o); setCart({}); setShowCart(false); }} />}
       {track && <Track onClose={() => setTrack(false)} />}
-      {placed && <Modal title="Order Received Successfully ✔" onClose={() => setPlaced(null)}><p>Your Order Number: <b style={{ fontSize: '1.3rem' }}>{placed.orderNo}</b></p><p>Total (delivery samet): <b>{fmt(placed.total)}</b> — Cash on Delivery.</p><p className="muted">Please save this number along with your phone number to track your order. We will contact you shortly.</p></Modal>}
+      {placed && <Modal title="Order received ✔" onClose={() => setPlaced(null)}><p>Your order number: <b style={{ fontSize: '1.3rem' }}>{placed.orderNo}</b></p><p>Total (including delivery): <b>{fmt(placed.total)}</b> — Cash on Delivery.</p><p className="muted">Please save this order number and your phone number — you will need both to track your order. We will contact you shortly.</p></Modal>}
     </>
   );
 }
@@ -88,8 +94,8 @@ function Cart({ info, items, sub, setCart, onClose, onPlaced }: any) {
     if (o) onPlaced(o);
   };
   return (
-    <Modal title="Aap ka cart" onClose={onClose}>
-      {items.length === 0 && <p className="muted">Cart is empty.</p>}
+    <Modal title="Your cart" onClose={onClose}>
+      {items.length === 0 && <p className="muted">Your cart is empty.</p>}
       {items.map((x: any) => (
         <div key={x.p.id} className="row" style={{ marginBottom: 6 }}>
           <span className="grow">{x.p.name} {x.p.strength}<br /><span className="muted">{fmt(x.p.sellingPrice)}</span></span>
@@ -104,12 +110,12 @@ function Cart({ info, items, sub, setCart, onClose, onPlaced }: any) {
           <div className="row"><span className="grow">Items</span><b>{fmt(sub)}</b></div>
           <div className="row"><span className="grow">Delivery</span><b>{fmt(fee)}</b></div>
           <div className="row"><span className="grow"><b>Total (Cash on Delivery)</b></span><b>{fmt(sub + fee)}</b></div>
-          {Number(info.minOrder) > sub && <p className="err">The minimum order amount should be at least{fmt(info.minOrder)}</p>}
-          <Field label="Your Name"><input value={f.customerName} onChange={set('customerName')} required minLength={2} autoComplete="name" /></Field>
+          {Number(info.minOrder) > sub && <p className="err">Minimum order amount is {fmt(info.minOrder)}.</p>}
+          <Field label="Your name"><input value={f.customerName} onChange={set('customerName')} required minLength={2} autoComplete="name" /></Field>
           <Field label="Phone"><input value={f.phone} onChange={set('phone')} required inputMode="tel" autoComplete="tel" /></Field>
-          <Field label="Full Address"><textarea value={f.address} onChange={set('address')} required minLength={8} rows={2} autoComplete="street-address" /></Field>
+          <Field label="Full address"><textarea value={f.address} onChange={set('address')} required minLength={8} rows={2} autoComplete="street-address" /></Field>
           <Field label="Note (optional)"><input value={f.note} onChange={set('note')} /></Field>
-          <button className="btn" style={{ width: '100%' }} disabled={busy || Number(info.minOrder) > sub}>{busy ? 'Placing Order…' : 'Place Order Now'}</button>
+          <button className="btn" style={{ width: '100%' }} disabled={busy || Number(info.minOrder) > sub}>{busy ? 'Please wait…' : 'Place order'}</button>
         </form>
       )}
     </Modal>
@@ -120,13 +126,13 @@ function Track({ onClose }: { onClose: () => void }) {
   const [orderNo, setOrderNo] = useState('');
   const [phone, setPhone] = useState('');
   const [res, setRes] = useState<any>(null);
-  const go = async (e: any) => { e.preventDefault(); const r = await run(() => api('/store/track?' + qs({ orderNo: orderNo.trim().toUpperCase(), phone }))); if (r) setRes(r); else toast('Order nahi mila', 'err'); };
+  const go = async (e: any) => { e.preventDefault(); const r = await run(() => api('/store/track?' + qs({ orderNo: orderNo.trim().toUpperCase(), phone }))); if (r) setRes(r); else toast('Order not found', 'err'); };
   return (
-    <Modal title="Trackm Order" onClose={onClose}>
+    <Modal title="Track order" onClose={onClose}>
       <form onSubmit={go}>
         <Field label="Order number (WEB-00001)"><input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} required /></Field>
         <Field label="Phone number"><input value={phone} onChange={(e) => setPhone(e.target.value)} required inputMode="tel" /></Field>
-        <button className="btn">View Details</button>
+        <button className="btn">Track</button>
       </form>
       {res && <div className="mt"><h3>{res.orderNo}: <span className="tag">{res.status}</span></h3>
         <ul>{res.items.map((i: any, k: number) => <li key={k}>{i.name} × {i.qty}</li>)}</ul>

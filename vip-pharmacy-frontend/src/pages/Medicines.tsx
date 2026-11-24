@@ -22,15 +22,15 @@ export default function Medicines() {
         <div className="row">
           <input placeholder="Search…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} style={{ width: 220 }} aria-label="Search medicines" />
           <select value={show} onChange={(e) => setShow(e.target.value as any)} style={{ width: 130 }}><option value="active">Active</option><option value="archived">Archived</option></select>
-          {canEdit && <button className="btn" onClick={() => setEdit({ ...EMPTY })}>+ New Medicine</button>}
+          {canEdit && <button className="btn" onClick={() => setEdit({ ...EMPTY })}>+ New medicine</button>}
         </div>
       </div>
       <State loading={loading} error={error} />
       {data && (
         <div className="scroll"><table className="tbl">
-          <thead><tr><th>Naam</th><th>Generic</th><th>Category</th><th className="right">Cost</th><th className="right">Price</th><th className="right">Stock</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Generic</th><th>Category</th><th className="right">Cost</th><th className="right">Price</th><th className="right">Stock</th><th></th></tr></thead>
           <tbody>
-            {data.items.length === 0 && <tr><td colSpan={7} className="muted">No Medicines Available.</td></tr>}
+            {data.items.length === 0 && <tr><td colSpan={7} className="muted">No medicines found.</td></tr>}
             {data.items.map((m: any) => (
               <tr key={m.id}>
                 <td>{m.name} {m.strength} <span className="muted">{m.form}</span> {m.requiresPrescription && <span className="tag amber">Rx</span>} {m.showOnline && <span className="tag">online</span>}</td>
@@ -47,7 +47,7 @@ export default function Medicines() {
           </tbody>
         </table></div>
       )}
-      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page} · kul {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Agla →</button></div>}
+      {data && <div className="row mt"><button className="btn sec sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Previous</button><span className="muted">Page {page} · total {data.total}</span><button className="btn sec sm" disabled={page * 25 >= data.total} onClick={() => setPage(page + 1)}>Next →</button></div>}
       {edit && <MedForm initial={edit} cats={cats.data || []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); cats.reload(); }} />}
       {stockFor && <StockForm med={stockFor} onClose={() => setStockFor(null)} onSaved={() => { setStockFor(null); reload(); }} />}
     </>
@@ -70,14 +70,14 @@ function MedForm({ initial, cats, onClose, onSaved }: any) {
     try {
       await api(id ? '/medicines/' + id : '/medicines', { method: id ? 'PATCH' : 'POST', body });
       onSaved();
-    } catch (er: any) { if (/pehle se hai/.test(er.message)) setDup(er.message); else run(() => Promise.reject(er)); }
+    } catch (er: any) { if (/may already exist/.test(er.message)) setDup(er.message); else run(() => Promise.reject(er)); }
   };
   return (
-    <Modal title={f.id ? 'Edit Medicine' : 'New Medicine'} onClose={onClose} wide>
+    <Modal title={f.id ? 'Edit medicine' : 'New medicine'} onClose={onClose} wide>
       <form onSubmit={save}>
         <div className="grid2">
-          <Field label="Naam *"><input value={f.name} onChange={set('name')} required /></Field>
-          <Field label="Generic naam"><input value={f.genericName || ''} onChange={set('genericName')} /></Field>
+          <Field label="Name *"><input value={f.name} onChange={set('name')} required /></Field>
+          <Field label="Generic name"><input value={f.genericName || ''} onChange={set('genericName')} /></Field>
           <Field label="Brand"><input value={f.brand || ''} onChange={set('brand')} /></Field>
           <Field label="Strength (500mg)"><input value={f.strength || ''} onChange={set('strength')} /></Field>
           <Field label="Form (Tablet/Syrup)"><input value={f.form || ''} onChange={set('form')} /></Field>
@@ -88,11 +88,11 @@ function MedForm({ initial, cats, onClose, onSaved }: any) {
           <Field label="Selling price *"><input type="number" step="0.01" min={0} value={f.sellingPrice} onChange={set('sellingPrice')} required /></Field>
           <Field label="Reorder level"><input type="number" min={0} value={f.reorderLevel} onChange={set('reorderLevel')} /></Field>
           <Field label="Category"><select value={f.categoryId} onChange={set('categoryId')}><option value="">—</option>{cats.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
-          <Field label="Add New Category"><input value={newCat} onChange={(e) => setNewCat(e.target.value)} /></Field>
+          <Field label="Or type a new category"><input value={newCat} onChange={(e) => setNewCat(e.target.value)} /></Field>
           <Field label="Storage notes"><input value={f.storageNotes || ''} onChange={set('storageNotes')} /></Field>
         </div>
-        <label className="row"><input type="checkbox" checked={f.requiresPrescription} onChange={set('requiresPrescription')} /> Prescription Required(Rx) — Not Available for Online Sale</label>
-        <label className="row"><input type="checkbox" checked={f.showOnline} onChange={set('showOnline')} /> Show in Online Store</label>
+        <label className="row"><input type="checkbox" checked={f.requiresPrescription} onChange={set('requiresPrescription')} /> Prescription required (Rx) — not sold online</label>
+        <label className="row"><input type="checkbox" checked={f.showOnline} onChange={set('showOnline')} /> Show in online store</label>
         {dup && <p className="err mt">{dup} <label><input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} /> force</label></p>}
         <button className="btn mt">Save</button>
       </form>
@@ -105,7 +105,7 @@ function StockForm({ med, onClose, onSaved }: any) {
   const set = (k: string) => (e: any) => setF({ ...f, [k]: e.target.value });
   const save = async (e: any) => {
     e.preventDefault();
-    if (await run(() => api('/inventory/batches', { method: 'POST', body: { medicineId: med.id, batchNo: f.batchNo, expiryDate: f.expiryDate, qty: Number(f.qty), costPrice: Number(f.costPrice) } }), 'Stock add ho gaya')) onSaved();
+    if (await run(() => api('/inventory/batches', { method: 'POST', body: { medicineId: med.id, batchNo: f.batchNo, expiryDate: f.expiryDate, qty: Number(f.qty), costPrice: Number(f.costPrice) } }), 'Stock added')) onSaved();
   };
   return (
     <Modal title={`Stock add: ${med.name}`} onClose={onClose}>
@@ -114,7 +114,7 @@ function StockForm({ med, onClose, onSaved }: any) {
         <Field label="Expiry date"><input type="date" value={f.expiryDate} onChange={set('expiryDate')} required /></Field>
         <Field label="Quantity"><input type="number" min={1} value={f.qty} onChange={set('qty')} required /></Field>
         <Field label="Cost price (per unit)"><input type="number" step="0.01" min={0} value={f.costPrice} onChange={set('costPrice')} required /></Field>
-        <p className="muted">This is opening stock / direct stock-in. Use "Purchases" for stock received from suppliers. Expiry {f.expiryDate && dOnly(f.expiryDate)}.</p>
+        <p className="muted">This is opening stock (a direct stock-in). For goods bought from a supplier, use "Purchases". Expiry {f.expiryDate && dOnly(f.expiryDate)}.</p>
         <button className="btn">Save</button>
       </form>
     </Modal>

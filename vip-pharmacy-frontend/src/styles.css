@@ -49,3 +49,15 @@ input[type=checkbox]{width:auto}
 @media print{body *{visibility:hidden}.receipt,.receipt *{visibility:visible}.receipt{position:absolute;left:0;top:0}}
 @media(max-width:860px){.layout{flex-direction:column}.side{width:auto;flex-direction:row;flex-wrap:wrap;padding:.5rem}.side .brand{width:100%;padding:.2rem .4rem}.pos,.grid2{grid-template-columns:1fr}.main{padding:.8rem}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* v2 */
+.chip{display:inline-flex;gap:.4rem;align-items:center;background:#e3efe9;border-radius:99px;padding:.15rem .7rem}
+a.btn{text-decoration:none;display:inline-block}
+.btn.sec.sm{background:#fff}
+pre{background:#f0f4f2;padding:.6rem;border-radius:var(--r);overflow:auto}
+@media print{.side,.top,.tabs{display:none}}
+
+/* v3 */
+.print-title{display:none}
+tfoot td{background:#eaf1ee}
+@media print{.no-print,.side,.tabs{display:none!important}.print-title{display:block;margin-bottom:.8rem}.main{padding:0}body{background:#fff}.tbl{font-size:12px}.card{border-color:#999}}

@@ -1,7 +1,7 @@
-import { prisma, Tx } from './db.js';
-import { HttpError } from './middleware.js';
+import { prisma, Tx } from './db';
+import { HttpError } from './middleware';
 
-// Date-only (UTC midnight) for today. Expiry date wali batch usi din tak bik sakti hai.
+// Date-only (UTC midnight) for today. A batch can be sold up to and including its expiry date.
 export const todayDate = () => {
   const d = new Date();
   return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -15,7 +15,7 @@ export const validBatchWhere = (branchId: number, medicineId?: number | { in: nu
   expiryDate: { gte: todayDate() },
 });
 
-// FEFO: sab se pehle expire hone wali batch pehle
+// FEFO: the batch that expires first is sold first
 export async function allocateFefo(tx: Tx, medicineId: number, branchId: number, qty: number, name: string) {
   const batches = await tx.batch.findMany({
     where: validBatchWhere(branchId, medicineId) as any,
@@ -29,14 +29,14 @@ export async function allocateFefo(tx: Tx, medicineId: number, branchId: number,
     out.push({ batch: b, qty: take });
     need -= take;
   }
-  if (need > 0) throw new HttpError(409, `Insufficient Stock or Expired Medicine: ${name}`);
+  if (need > 0) throw new HttpError(409, `Not enough valid stock for: ${name}`);
   return out;
 }
 
-// Atomic guard: stock kabhi minus nahi hoga, chahe do cashier ek sath bechein
+// Atomic guard: stock can never go negative, even if two cashiers sell at the same time
 export async function takeFromBatch(tx: Tx, batchId: number, qty: number) {
   const r = await tx.batch.updateMany({ where: { id: batchId, availableQty: { gte: qty } }, data: { availableQty: { decrement: qty } } });
-  if (r.count === 0) throw new HttpError(409, 'The stock has just been sold in another transaction. Please try again');
+  if (r.count === 0) throw new HttpError(409, 'This stock was just sold in another sale — please try again');
 }
 
 export async function nextNumber(tx: Tx, key: string) {
