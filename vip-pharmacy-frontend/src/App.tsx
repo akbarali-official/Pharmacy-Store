@@ -14,6 +14,7 @@ import Sales from './pages/Sales';
 import Customers from './pages/Customers';
 import Finance from './pages/Finance';
 import Reports from './pages/Reports';
+import DataTools from './pages/DataTools';
 import Tools from './pages/Tools';
 import Orders from './pages/Orders';
 import Admin from './pages/Admin';
@@ -37,6 +38,7 @@ const NAV: [string, string, string[]][] = [
   ['/staff/orders', 'Online Orders', SELL],
   ['/staff/finance', 'Cash & Expenses', [...SELL, 'ACCOUNTANT']],
   ['/staff/reports', 'Reports', MONEY],
+  ['/staff/data', 'Import & Export', ['OWNER', 'MANAGER', 'INVENTORY']],
   ['/staff/tools', 'Business Tools', ['OWNER', 'MANAGER', 'PHARMACIST', 'INVENTORY', 'ACCOUNTANT']],
   ['/staff/admin', 'Staff & Settings', ['OWNER', 'MANAGER']],
 ];
@@ -86,6 +88,7 @@ function Staff() {
             <Route path="orders" element={guard(SELL, <Orders />)} />
             <Route path="finance" element={guard([...SELL, 'ACCOUNTANT'], <Finance />)} />
             <Route path="reports" element={guard(MONEY, <Reports />)} />
+            <Route path="data" element={guard(['OWNER', 'MANAGER', 'INVENTORY'], <DataTools />)} />
             <Route path="tools" element={guard(['OWNER', 'MANAGER', 'PHARMACIST', 'INVENTORY', 'ACCOUNTANT'], <Tools />)} />
             <Route path="admin" element={guard(['OWNER', 'MANAGER'], <Admin />)} />
             <Route path="*" element={<Navigate to="/staff" />} />
