@@ -16,6 +16,9 @@ export default function POS() {
   const [discount, setDiscount] = useState('0');
   const [method, setMethod] = useState('CASH');
   const [received, setReceived] = useState('');
+  const [paidNow, setPaidNow] = useState('');
+  const [payNowMethod, setPayNowMethod] = useState('CASH');
+  const [acct, setAcct] = useState<any>(null);
   const [rx, setRx] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<any>(null);
@@ -26,6 +29,12 @@ export default function POS() {
   const [showHeld, setShowHeld] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const checkoutRef = useRef<() => void>(() => {});
+
+  // Load the customer's credit account (limit, balance) when one is selected
+  useEffect(() => {
+    if (!customer) { setAcct(null); setMethod((m) => (m === 'CREDIT' ? 'CASH' : m)); return; }
+    api('/credit/customers/' + customer.id + '/balance').then(setAcct).catch(() => setAcct(null));
+  }, [customer]);
 
   useEffect(() => {
     if (!q.trim()) return setResults([]);
@@ -66,13 +75,20 @@ export default function POS() {
   const paid = received === '' ? total : Number(received);
   const change = Math.max(0, paid - total);
   const needRx = cart.some((x) => x.requiresPrescription);
-  const canPay = cart.length > 0 && !(needRx && !rx) && paid >= total;
+  const isCredit = method === 'CREDIT';
+  const payNow = Number(paidNow) || 0;
+  const owed = Math.max(0, Math.round((total - payNow) * 100) / 100);
+  const creditOk = !!customer && !!acct && acct.creditLimit > 0 && payNow <= total && owed <= acct.available + 0.001;
+  const canPay = cart.length > 0 && !(needRx && !rx) && (isCredit ? creditOk : paid >= total);
 
   const checkout = async () => {
     setBusy(true);
-    const sale = await run(() => api('/pos/checkout', { method: 'POST', body: { items: cart.map((x) => ({ medicineId: x.id, qty: x.qty })), discount: disc, customerId: customer?.id, payments: [{ method, amount: method === 'CASH' ? paid : total }], prescriptionVerified: needRx ? rx : undefined } }));
+    const items = cart.map((x) => ({ medicineId: x.id, qty: x.qty }));
+    const sale = await run(() => isCredit
+      ? api('/pos/checkout-credit', { method: 'POST', body: { items, discount: disc, customerId: customer?.id, paidNow: payNow, method: payNowMethod, prescriptionVerified: needRx ? rx : undefined } })
+      : api('/pos/checkout', { method: 'POST', body: { items, discount: disc, customerId: customer?.id, payments: [{ method, amount: method === 'CASH' ? paid : total }], prescriptionVerified: needRx ? rx : undefined } }));
     setBusy(false);
-    if (sale) { setDone(sale); setCart([]); setDiscount('0'); setReceived(''); setRx(false); setCustomer(null); }
+    if (sale) { setDone(sale); setCart([]); setDiscount('0'); setReceived(''); setPaidNow(''); setRx(false); setCustomer(null); }
   };
   checkoutRef.current = () => { if (canPay && !busy) checkout(); };
 
@@ -136,9 +152,20 @@ export default function POS() {
               <div className="grid2">
                 <label className="f"><span>Discount ({settings.currency})</span><input type="number" min={0} value={discount} onChange={(e) => setDiscount(e.target.value)} /></label>
                 <label className="f"><span>Payment</span>
-                  <select value={method} onChange={(e) => setMethod(e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="BANK">Bank transfer</option><option value="OTHER">Other</option></select>
+                  <select value={method} onChange={(e) => setMethod(e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="BANK">Bank transfer</option><option value="OTHER">Other</option>{customer && <option value="CREDIT">Credit (pay later)</option>}</select>
                 </label>
               </div>
+              {isCredit && (
+                <div className="card" style={{ marginBottom: 8, background: '#f7fbf9' }}>
+                  {acct && acct.creditLimit > 0 ? <p style={{ margin: '0 0 .5rem' }}>Balance owed: <b>{fmt(acct.balance)}</b> · Limit: <b>{fmt(acct.creditLimit)}</b> · Available: <b>{fmt(acct.available)}</b></p> : <p className="err" style={{ margin: '0 0 .5rem' }}>This customer has no credit limit. Ask a manager to set one under Customer Credit.</p>}
+                  <div className="grid2">
+                    <label className="f"><span>Paid now (optional)</span><input type="number" min={0} value={paidNow} onChange={(e) => setPaidNow(e.target.value)} placeholder="0" /></label>
+                    <label className="f"><span>Paid with</span><select value={payNowMethod} onChange={(e) => setPayNowMethod(e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="BANK">Bank transfer</option><option value="OTHER">Other</option></select></label>
+                  </div>
+                  <div className="row"><span className="grow">Goes on the customer's account</span><b>{fmt(owed)}</b></div>
+                  {acct && acct.creditLimit > 0 && owed > acct.available + 0.001 && <p className="err" style={{ margin: '.4rem 0 0' }}>This is above the customer's available credit.</p>}
+                </div>
+              )}
               {method === 'CASH' && <label className="f"><span>Amount received from customer (blank = exact)</span><input type="number" min={0} value={received} onChange={(e) => setReceived(e.target.value)} placeholder={String(total)} /></label>}
               {needRx && <label className="row" style={{ marginBottom: 8 }}><input type="checkbox" checked={rx} onChange={(e) => setRx(e.target.checked)} /> Prescription has been checked (verified by pharmacist)</label>}
               <div className="row"><span className="grow muted">Subtotal {fmt(subtotal)}{disc > 0 && ` − ${fmt(disc)}`}</span><span className="total">{fmt(total)}</span></div>

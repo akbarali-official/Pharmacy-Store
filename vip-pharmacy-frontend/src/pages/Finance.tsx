@@ -38,6 +38,7 @@ function Cash() {
           <h2>Session open ({dt(s.openedAt)})</h2>
           <div className="row"><span className="grow">Opening</span><b>{fmt(s.openingCash)}</b></div>
           <div className="row"><span className="grow">+ Cash sales</span><b>{fmt(s.cashIn)}</b></div>
+          {s.customerCash !== undefined && <div className="row"><span className="grow">+ Customer payments (credit)</span><b>{fmt(s.customerCash)}</b></div>}
           <div className="row"><span className="grow">− Cash refunds</span><b>{fmt(s.cashRefund)}</b></div>
           <div className="row"><span className="grow">− Cash expenses</span><b>{fmt(s.cashExp)}</b></div>
           <div className="row"><span className="grow"><b>Expected</b></span><b>{fmt(s.expected)}</b></div>

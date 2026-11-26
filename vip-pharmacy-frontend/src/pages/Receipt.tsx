@@ -27,6 +27,7 @@ export default function Receipt({ sale, settings }: { sale: any; settings: any }
           <tr><td><b>TOTAL</b></td><td className="r"><b>{Number(sale.total).toFixed(2)}</b></td></tr>
           {sale.payments.map((p: any) => <tr key={p.id}><td>{p.method}</td><td className="r">{Number(p.amount).toFixed(2)}</td></tr>)}
           {Number(sale.changeDue) > 0 && <tr><td>Change</td><td className="r">{Number(sale.changeDue).toFixed(2)}</td></tr>}
+          {Number(sale.total) - Number(sale.paid) > 0.004 && <tr><td><b>On account (to pay later)</b></td><td className="r"><b>{(Number(sale.total) - Number(sale.paid)).toFixed(2)}</b></td></tr>}
         </tbody></table>
         <hr />
         <div className="c">{settings.receiptFooter}</div>

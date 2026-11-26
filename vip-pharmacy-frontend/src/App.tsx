@@ -12,6 +12,7 @@ import Purchases from './pages/Purchases';
 import Payables from './pages/Payables';
 import Sales from './pages/Sales';
 import Customers from './pages/Customers';
+import Credit from './pages/Credit';
 import Finance from './pages/Finance';
 import Reports from './pages/Reports';
 import DataTools from './pages/DataTools';
@@ -35,6 +36,7 @@ const NAV: [string, string, string[]][] = [
   ['/staff/purchases', 'Suppliers & Purchases', BUY],
   ['/staff/payables', 'Supplier Accounts', ['OWNER', 'MANAGER', 'ACCOUNTANT', 'INVENTORY']],
   ['/staff/customers', 'Customers', [...SELL, 'ACCOUNTANT']],
+  ['/staff/credit', 'Customer Credit', ['OWNER', 'MANAGER', 'ACCOUNTANT', 'PHARMACIST', 'CASHIER']],
   ['/staff/orders', 'Online Orders', SELL],
   ['/staff/finance', 'Cash & Expenses', [...SELL, 'ACCOUNTANT']],
   ['/staff/reports', 'Reports', MONEY],
@@ -85,6 +87,7 @@ function Staff() {
             <Route path="purchases" element={guard(BUY, <Purchases />)} />
             <Route path="payables" element={guard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'INVENTORY'], <Payables />)} />
             <Route path="customers" element={guard([...SELL, 'ACCOUNTANT'], <Customers />)} />
+            <Route path="credit" element={guard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'PHARMACIST', 'CASHIER'], <Credit />)} />
             <Route path="orders" element={guard(SELL, <Orders />)} />
             <Route path="finance" element={guard([...SELL, 'ACCOUNTANT'], <Finance />)} />
             <Route path="reports" element={guard(MONEY, <Reports />)} />

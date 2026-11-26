@@ -204,6 +204,8 @@ model PurchaseItem {
 }
 
 model Customer {
+  creditLimit Decimal @default(0) @db.Decimal(12, 2)
+  ledger      CustomerLedger[]
   id        Int      @id @default(autoincrement())
   name      String
   phone     String?  @unique
@@ -434,4 +436,23 @@ model PurchaseReturnItem {
   batch    Batch          @relation(fields: [batchId], references: [id])
   qty      Int
   unitCost Decimal        @db.Decimal(12, 2)
+}
+
+// ---- Customer credit (udhaar) ----
+model CustomerLedger {
+  id            Int       @id @default(autoincrement())
+  customerId    Int
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  branchId      Int
+  userId        Int
+  type          String    // CREDIT_SALE | PAYMENT | ADJUSTMENT
+  amount        Decimal   @db.Decimal(12, 2)
+  method        PayMethod?
+  saleId        Int?
+  cashSessionId Int?
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([cashSessionId])
 }
