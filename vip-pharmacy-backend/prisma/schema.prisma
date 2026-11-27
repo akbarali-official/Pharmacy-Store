@@ -119,6 +119,7 @@ model Medicine {
 }
 
 model Batch {
+  stockCountItems StockCountItem[]
   purchaseReturnItems PurchaseReturnItem[]
   id           Int      @id @default(autoincrement())
   medicineId   Int
@@ -455,4 +456,35 @@ model CustomerLedger {
 
   @@index([customerId])
   @@index([cashSessionId])
+}
+
+// ---- Stock count (physical inventory) ----
+model StockCount {
+  id            Int              @id @default(autoincrement())
+  branchId      Int
+  userId        Int
+  categoryId    Int?
+  status        String           @default("OPEN") // OPEN | COMPLETED | CANCELLED
+  note          String?
+  varianceUnits Int              @default(0)
+  varianceValue Decimal          @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime         @default(now())
+  completedAt   DateTime?
+  completedById Int?
+  items         StockCountItem[]
+
+  @@index([branchId, status])
+}
+
+model StockCountItem {
+  id         Int        @id @default(autoincrement())
+  countId    Int
+  count      StockCount @relation(fields: [countId], references: [id])
+  batchId    Int
+  batch      Batch      @relation(fields: [batchId], references: [id])
+  systemQty  Int
+  countedQty Int?
+
+  @@unique([countId, batchId])
+  @@index([countId])
 }

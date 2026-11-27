@@ -167,3 +167,6 @@ a.kpi:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(10,40,30,.12)
 
 /* v9 customer credit */
 .side a[href$="/credit"]::before{content:"📒"}
+
+/* v10 stock count */
+.side a[href$="/stockcount"]::before{content:"📋"}
